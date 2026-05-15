@@ -1,0 +1,59 @@
+# ──────────────────────────────────────────
+# OS Specific
+# ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ──────────────────────────────────────────
+# Node.js (Frontend)
+# ──────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.vite/
+.eslintcache
+.env
+frontend/.env
+frontend/.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ──────────────────────────────────────────
+# Go (Backend)
+# ──────────────────────────────────────────
+backend/bin/
+backend/out/
+backend/.env
+backend/lotto-backend.exe
+backend/lotto-backend
+vendor/
+*.exe
+*.test
+*.prof
+
+# ──────────────────────────────────────────
+# Database & Tools (Prisma / ClickHouse / Redis)
+# ──────────────────────────────────────────
+backend/prisma/db/
+backend/prisma/*.db
+pgdata/
+chdata/
+chdata_v2/
+redis_data/
+*.log
+
+# ──────────────────────────────────────────
+# Docker
+# ──────────────────────────────────────────
+.docker/
+docker-compose.override.yml
+
+# ──────────────────────────────────────────
+# Documentation & Archive (Optional to ignore)
+# ────────────────────────────────────────----------
+archive/
+*.tmp

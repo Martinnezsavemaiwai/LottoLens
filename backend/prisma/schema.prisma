@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "go run github.com/steebchen/prisma-client-go"
+}
+
+/// ตารางเก็บผลสลากกินแบ่งรัฐบาลแต่ละงวด
+model LottoDraw {
+  /// UUID Primary Key — สร้างอัตโนมัติ
+  id String @id @default(uuid())
+
+  /// วันที่ออกรางวัล — Unique เพื่อป้องกันข้อมูลซ้ำ
+  drawDate DateTime @unique
+
+  /// วันที่ 1 หรือ 16 ของเดือน
+  drawDay Int
+
+  /// เดือน (1-12)
+  month Int
+
+  /// ปี ค.ศ. (เช่น 2025)
+  year Int
+
+  // ──────────────────────────────────────────
+  // รางวัลหลัก
+  // ──────────────────────────────────────────
+
+  /// รางวัลที่ 1 (6 หลัก) — 1 รางวัล
+  firstPrize String
+
+  /// รางวัลข้างเคียง (6 หลัก) — 2 รางวัล  JSON: ["123456","789012"]
+  nearbyPrizes Json
+
+  /// รางวัลที่ 2 (6 หลัก) — 5 รางวัล  JSON: ["...","...","...","...","..."]
+  secondPrizes Json
+
+  /// รางวัลที่ 3 (6 หลัก) — 10 รางวัล
+  thirdPrizes Json
+
+  /// รางวัลที่ 4 (6 หลัก) — 50 รางวัล
+  fourthPrizes Json
+
+  /// รางวัลที่ 5 (6 หลัก) — 100 รางวัล
+  fifthPrizes Json
+
+  // ──────────────────────────────────────────
+  // รางวัลพิเศษ
+  // ──────────────────────────────────────────
+
+  /// เลข 3 ตัวบน — 2 ชุด  JSON: ["306","694"]
+  front3 Json
+
+  /// เลข 3 ตัวล่าง — 2 ชุด  JSON: ["428","780"]
+  back3 Json
+
+  /// เลข 2 ตัวล่าง — 1 ชุด  เช่น "36"
+  back2 String
+
+  // ──────────────────────────────────────────
+  // Metadata
+  // ──────────────────────────────────────────
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([year, month])
+  @@index([drawDay])
+  @@index([back2])
+}

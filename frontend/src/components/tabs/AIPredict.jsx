@@ -1,0 +1,322 @@
+import { useState } from "react";
+import { callGemini } from "../../services/gemini";
+import { fetchAIContext } from "../../services/api";
+import { getNextDraw, parseJson } from "../../utils/helpers";
+
+/**
+ * Tab: AIPredict — วิเคราะห์หวยด้วย Gemini AI
+ * @param {{ history: Array, stats: Object }} props
+ */
+export default function AIPredict({ history, stats }) {
+  const [loading, setLoading]     = useState(false);
+  const [result, setResult]       = useState(null);
+  const [prizeMode, setPrizeMode] = useState("back2");
+  const [question, setQuestion]   = useState("");
+  const [freeResp, setFreeResp]   = useState("");
+  const [freeLoad, setFreeLoad]   = useState(false);
+  const [aiContext, setAiContext] = useState(null);
+
+  const nextDraw = getNextDraw();
+
+  const PRIZE_META = {
+    back2:  { label:"เลขท้าย 2 ตัว", digits:2, color:"var(--red)",   icon:"🔴", desc:"Combo Score × Markov × Recency" },
+    back3:  { label:"เลขท้าย 3 ตัว", digits:3, color:"var(--blue)",  icon:"🔵", desc:"Positional Entropy × Z-score" },
+    front3: { label:"เลขหน้า 3 ตัว",   digits:3, color:"var(--green)", icon:"🟢", desc:"Transition Matrix × Gap Analysis" },
+    first:  { label:"รางวัลที่ 1",digits:6, color:"var(--gold2)",icon:"🏆", desc:"Full Positional × Markov Chain" },
+  };
+  const meta = PRIZE_META[prizeMode];
+
+  function buildFallback(mc, customLogic) {
+    const primary = ["00", "11", "22", "33"];
+    return {
+      confidence: 50,
+      core: "??",
+      primary, backup: ["44", "55"],
+      methods: ["Fallback"],
+      logic: customLogic || "ไม่สามารถประมวลผลข้อมูลสถิติได้ในขณะนี้",
+    };
+  }
+
+  async function handlePredict() {
+    setLoading(true); setResult(null);
+    try {
+      // 1. Get Context from Go Backend
+      const resp = await fetchAIContext(prizeMode);
+      setAiContext(resp.raw_stats);
+      
+      const prompt = `คุณเป็น Senior Data Scientist วิเคราะห์หวยรัฐบาลไทยด้วยสถิติขั้นสูง
+
+งวดเป้าหมาย: ${nextDraw} | โหมด: ${meta.label} (${meta.digits} หลัก)
+ฐานข้อมูล: ${history.length} งวด
+
+── Mathematical Analysis Context (ClickHouse) ──
+${resp.context}
+
+กระบวนการวิเคราะห์:
+1. Positional Probability — วิเคราะห์หลักที่มีความน่าจะเป็นสูงสุด
+2. Markov Transition — วิเคราะห์เลขที่มักจะออกต่อจากงวดล่าสุด
+3. Z-score reversion — วิเคราะห์เลขที่ขาดหายไปนาน (Overdue)
+4. Recency weighting — ให้ความสำคัญกับงวดล่าสุดมากกว่า
+
+ตอบเป็น JSON เท่านั้น:
+{"confidence":<50-80>,"core":"<${meta.digits}หลัก>","primary":["<${meta.digits}หลัก>","<${meta.digits}หลัก>","<${meta.digits}หลัก>","<${meta.digits}หลัก>"],"backup":["<${meta.digits}หลัก>","<${meta.digits}หลัก>","<${meta.digits}หลัก>"],"methods":["วิธี1","วิธี2","วิธี3"],"logic":"<อธิบาย 3-4 ประโยค อ้างอิงค่าสถิติจริง>"}`;
+
+      const aiResp = await callGemini(prompt, "ตอบ JSON เท่านั้น ไม่มี markdown ไม่มี backtick");
+      
+      // Handle error object
+      if (aiResp && typeof aiResp === 'object' && aiResp.error) {
+        setResult(buildFallback(null, aiResp.message));
+        setLoading(false);
+        return;
+      }
+
+      const parsed = parseJson(aiResp);
+      setResult(parsed?.primary ? parsed : buildFallback());
+    } catch (err) { 
+      console.error("Predict Error:", err);
+      setResult(buildFallback()); 
+    }
+    setLoading(false);
+  }
+
+  async function handleFree() {
+    if (!question.trim()) return;
+    setFreeLoad(true); setFreeResp("");
+    try {
+      // Fetch context for better AI answering
+      const resp = await fetchAIContext(prizeMode);
+      const prompt = `คุณเป็น Senior Data Scientist เชี่ยวชาญสถิติหวยไทย
+ข้อมูลสถิติปัจจุบัน (${prizeMode}):
+${resp.context}
+
+คำถามจากผู้ใช้: ${question}`;
+
+      const aiResp = await callGemini(prompt, "คุณเป็น Senior Data Scientist เชี่ยวชาญสถิติหวยไทย ตอบภาษาไทย กระชับ ตรงประเด็น");
+      
+      if (aiResp && typeof aiResp === 'object' && aiResp.error) {
+        setFreeResp(`❌ ${aiResp.message}`);
+      } else {
+        setFreeResp(aiResp || "❌ ไม่ได้รับคำตอบ กรุณาลองใหม่");
+      }
+    } catch { setFreeResp("❌ เกิดข้อผิดพลาด กรุณาลองใหม่"); }
+    setFreeLoad(false);
+  }
+
+  const QUICK = [
+    "สรุปแนวโน้ม เลขท้าย 2 ตัวจากข้อมูลทั้งหมด",
+    "วิเคราะห์ pattern งวดวันที่ 1 vs 16",
+    "เปรียบเทียบ เลขหน้า 3 ตัว vs เลขท้าย 3 ตัว ว่าต่างกันอย่างไร",
+    "เลขชุดไหนควรซื้อสำหรับงวดหน้า พร้อมเหตุผล",
+  ];
+  const confColor = result
+    ? result.confidence>=72?"var(--green)":result.confidence>=60?"var(--gold)":"var(--red)"
+    : "var(--gold2)";
+
+  return (
+    <div className="fade">
+      <div className="ai-hero mt">
+        <div className="ai-glow" style={{background:"var(--blue)",top:-80,right:-80,width:200,height:200}}/>
+        <div className="ai-glow" style={{background:"var(--gold)",bottom:-80,left:-80,width:200,height:200}}/>
+        <div style={{position:"relative",zIndex:1}}>
+          <div style={{fontSize:36,marginBottom:8}}>🤖</div>
+          <div style={{fontFamily:"Playfair Display,serif",fontSize:22,fontWeight:900,color:"var(--gold3)",marginBottom:6}}>
+            Thai Lottery AI Predictor
+          </div>
+          <p style={{fontSize:11,color:"var(--txt3)",margin:"0 auto 16px",maxWidth:480}}>
+            Positional Entropy · Markov Chain · Z-score · Recency Weighting · Day Pattern · Chi²
+          </p>
+
+          {/* Prize mode selector */}
+          <div style={{marginBottom:18}}>
+            <div style={{fontSize:9,color:"var(--txt3)",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>เลือกประเภทรางวัล</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+              {Object.entries(PRIZE_META).map(([k,m])=>(
+                <div key={k} className={`mode-card${prizeMode===k?" on":""}`}
+                  style={{minWidth:100,borderColor:prizeMode===k?m.color:"var(--bdr2)"}}
+                  onClick={()=>{setPrizeMode(k);setResult(null);}}>
+                  <div style={{fontSize:22,marginBottom:4}}>{m.icon}</div>
+                  <div style={{fontFamily:"Chakra Petch,sans-serif",fontSize:14,fontWeight:700,color:prizeMode===k?m.color:"var(--txt3)"}}>
+                    {m.label}
+                  </div>
+                  <div style={{fontSize:9,color:"var(--txt3)",marginTop:3}}>{m.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{fontSize:11,color:"#ef9a9a",marginBottom:12}}>⚠️ วิเคราะห์เชิงสถิติ — ไม่รับประกันผล</div>
+          <div style={{fontSize:11,color:"var(--txt3)",marginBottom:14}}>
+            งวดเป้าหมาย: <strong style={{color:"var(--gold2)"}}>{nextDraw}</strong>
+            &nbsp;·&nbsp;ฐานข้อมูล {history.length} งวด
+          </div>
+
+          <button id="btn-predict" className="btn btn-g" onClick={handlePredict} disabled={loading}
+            style={{fontSize:14,padding:"11px 28px"}}>
+            {loading
+              ? <><span className="spin">⚙️</span> ประมวลผล {meta.label}...</>
+              : `🔮 วิเคราะห์ ${meta.label}`}
+          </button>
+        </div>
+      </div>
+
+      {loading && (
+        <div className="card mt" style={{textAlign:"center",padding:28}}>
+          <span className="spin" style={{fontSize:28}}>🔮</span>
+          <div style={{fontSize:13,color:"var(--txt3)",marginTop:10}}>
+            กำลังรัน Markov + Positional Entropy + Z-score + Day Pattern...
+          </div>
+        </div>
+      )}
+
+      {result && !loading && (
+        <div className="fade mt">
+          {result.methods?.length>0 && (
+            <div style={{marginBottom:12,display:"flex",gap:6,flexWrap:"wrap"}}>
+              {result.methods.map((m,i)=>(
+                <span key={i} style={{background:"rgba(61,142,240,0.1)",border:"1px solid rgba(61,142,240,0.25)",borderRadius:6,padding:"3px 10px",fontSize:10,color:"var(--blue)"}}>✓ {m}</span>
+              ))}
+            </div>
+          )}
+
+          <div className="g2">
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div className="card" style={{textAlign:"center"}}>
+                <div className="ctitle" style={{justifyContent:"center"}}>🎯 เลขเด่น (Core)</div>
+                <div style={{
+                  width:80,height:80,borderRadius:"50%",
+                  background:`radial-gradient(circle,${meta.color}33,${meta.color}11)`,
+                  border:`2.5px solid ${meta.color}`,
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontFamily:"Chakra Petch,sans-serif",
+                  fontSize:meta.digits<=2?34:meta.digits<=3?26:18,
+                  fontWeight:900,color:meta.color,margin:"0 auto 8px",
+                  boxShadow:`0 0 20px ${meta.color}44`,
+                  letterSpacing:meta.digits>3?2:0,
+                }}>
+                  {result.core}
+                </div>
+                <div style={{fontSize:10,color:"var(--txt3)"}}>Highest positional score</div>
+              </div>
+
+              <div className="card" style={{textAlign:"center"}}>
+                <div className="ctitle" style={{justifyContent:"center"}}>📈 Statistical Confidence</div>
+                <div className="ring-wrap">
+                  <svg width="92" height="92">
+                    <circle cx="46" cy="46" r="36" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="9"/>
+                    <circle cx="46" cy="46" r="36" fill="none" stroke={confColor} strokeWidth="9"
+                      strokeDasharray={`${2*Math.PI*36}`}
+                      strokeDashoffset={`${2*Math.PI*36*(1-result.confidence/100)}`}
+                      strokeLinecap="round" transform="rotate(-90 46 46)"
+                      style={{transition:"stroke-dashoffset 1.2s ease"}}/>
+                  </svg>
+                  <span className="ring-val" style={{color:confColor}}>{result.confidence}%</span>
+                </div>
+                <div style={{fontSize:10,color:"var(--txt3)",marginTop:6}}>
+                  {result.confidence>=72?"🟢 น้ำหนักสถิติสูง":result.confidence>=60?"🟡 ปานกลาง":"🔴 ความไม่แน่นอนสูง"}
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="ctitle">
+                🎱 ชุดเลขหลัก — {meta.label} (Primary)
+                <span className="prize-badge pb-back2" style={{borderColor:meta.color,color:meta.color,background:`${meta.color}15`}}>{meta.label}</span>
+              </div>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:22}}>
+                {result.primary?.map((n,i)=>(
+                  <div key={i} style={{
+                    position:"relative",
+                    minWidth:meta.digits===6?80:meta.digits===3?68:58,
+                    height:meta.digits===6?58:68,
+                    background:`linear-gradient(135deg,${meta.color}22,${meta.color}08)`,
+                    border:`1.5px solid ${i===0?meta.color:"rgba(201,149,42,0.2)"}`,
+                    borderRadius:13,display:"flex",alignItems:"center",justifyContent:"center",
+                    fontFamily:"Chakra Petch,sans-serif",
+                    fontSize:meta.digits===6?14:meta.digits===3?20:28,
+                    fontWeight:700,color:i===0?meta.color:"var(--txt)",letterSpacing:meta.digits>2?2:3,
+                    boxShadow:i===0?`0 4px 16px ${meta.color}33`:"none",
+                  }}>
+                    {n}
+                    {i===0 && <div style={{position:"absolute",top:-8,right:-6,fontSize:9,background:meta.color,color:"#000",borderRadius:4,padding:"1px 5px",fontFamily:"sans-serif",fontWeight:700}}>#1</div>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="ctitle">🛡️ ชุดสำรอง (Backup)</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
+                {result.backup?.map((n,i)=>(
+                  <div key={i} style={{
+                    minWidth:52,height:52,background:"var(--s1)",border:"1px solid var(--bdr2)",
+                    borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",
+                    fontFamily:"Chakra Petch,sans-serif",fontSize:meta.digits===6?13:meta.digits===3?18:22,
+                    fontWeight:700,color:"var(--txt3)",letterSpacing:2,
+                  }}>{n}</div>
+                ))}
+              </div>
+
+              <div style={{background:"var(--s1)",borderRadius:11,padding:14,border:"1px solid var(--bdr2)"}}>
+                <div style={{fontSize:9,color:meta.color,letterSpacing:1.5,textTransform:"uppercase",marginBottom:7}}>
+                  📊 Mathematical Analysis Logic
+                </div>
+                <p style={{fontSize:13,lineHeight:1.82,color:"var(--txt)"}}>{result.logic}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Math strip */}
+          <div className="card" style={{marginTop:0}}>
+            <div className="ctitle">🔬 กระบวนการวิเคราะห์ที่ใช้ (Real-time from ClickHouse)</div>
+            {aiContext ? (
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {aiContext.Positional.map((pos, i) => (
+                  <div key={i} style={{background:"var(--s2)",border:"1px solid var(--bdr2)",borderRadius:9,padding:"8px 12px",minWidth:90}}>
+                    <div style={{fontSize:8,color:"var(--gold)",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>หลักที่ {i+1}</div>
+                    <div style={{fontFamily:"Chakra Petch,sans-serif",fontSize:18,color:"var(--gold2)"}}>{pos[0]?.digit ?? "?"}</div>
+                    <div style={{fontSize:9,color:"var(--txt3)"}}>Freq: {pos[0]?.count ?? 0}</div>
+                  </div>
+                ))}
+                <div style={{background:"var(--s2)",border:"1px solid var(--bdr2)",borderRadius:9,padding:"8px 12px",minWidth:120}}>
+                  <div style={{fontSize:8,color:"var(--purple)",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Markov Next</div>
+                  <div style={{fontSize:11,color:"var(--txt)"}}>{(aiContext.Markov || []).slice(0,3).map(m => m.next_number).join(", ")||"N/A"}</div>
+                </div>
+                <div style={{background:"var(--s2)",border:"1px solid var(--bdr2)",borderRadius:9,padding:"8px 12px",minWidth:120}}>
+                  <div style={{fontSize:8,color:"var(--red)",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Z-score (Top)</div>
+                  <div style={{fontSize:11,color:"var(--txt)"}}>{(aiContext.ZScores || []).slice(-1).map(z => `Digit ${z.digit}: ${z.z_score.toFixed(2)}`).join("") || "N/A"}</div>
+                </div>
+                <div style={{background:"var(--s2)",border:"1px solid var(--bdr2)",borderRadius:9,padding:"8px 12px",minWidth:120}}>
+                  <div style={{fontSize:8,color:"var(--cyan)",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Last Draw</div>
+                  <div style={{fontSize:11,color:"var(--txt)"}}>{aiContext.LastNum || "N/A"}</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{fontSize:11,color:"var(--txt3)",textAlign:"center",padding:10}}>กดวิเคราะห์เพื่อดึงข้อมูลสถิติสดจาก ClickHouse</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Free Q&A */}
+      <div className="card mt">
+        <div className="ctitle">💬 ถาม AI อิสระ</div>
+        <div className="fchips" style={{marginBottom:10}}>
+          {QUICK.map((q,i)=>(
+            <button key={i} className="fchip" onClick={()=>setQuestion(q)}>{q}</button>
+          ))}
+        </div>
+        <div className="fg">
+          <input id="inp-question" className="inp" style={{flex:1}} value={question} onChange={e=>setQuestion(e.target.value)}
+            placeholder="เช่น วิเคราะห์แนวโน้ม เลขหน้า 3 ตัวงวดหน้า..."
+            onKeyDown={e=>e.key==="Enter"&&!freeLoad&&handleFree()}/>
+          <button id="btn-free-ask" className="btn btn-b" onClick={handleFree} disabled={freeLoad||!question.trim()}>
+            {freeLoad?"⏳":"🔍 ถาม"}
+          </button>
+        </div>
+        {(freeResp||freeLoad) && (
+          <div className={`ai-resp${freeLoad?" loading":""}`}>
+            {freeLoad?"🔮 กำลังวิเคราะห์...":freeResp}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

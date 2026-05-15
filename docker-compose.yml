@@ -1,0 +1,88 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lotto-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: lotto_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lotto_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  clickhouse_v2:
+    image: clickhouse/clickhouse-server:latest
+    container_name: lotto-clickhouse-v2
+    restart: always
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=lotto_pass
+    volumes:
+      - chdata_v2:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:alpine
+    container_name: lotto-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lotto-api
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/lotto_db?schema=public
+      - CLICKHOUSE_HOST=clickhouse_v2
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=lotto_pass
+      - REDIS_HOST=redis:6379
+      - PORT=8080
+    depends_on:
+      db:
+        condition: service_healthy
+      clickhouse_v2:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lotto-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8081/api/v1
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  chdata_v2:
