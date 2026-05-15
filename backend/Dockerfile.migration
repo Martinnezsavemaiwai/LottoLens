@@ -1,0 +1,13 @@
+FROM golang:1.24-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache git
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# No need to build, we run via go run for migration tools
+ENTRYPOINT ["go", "run", "github.com/steebchen/prisma-client-go"]

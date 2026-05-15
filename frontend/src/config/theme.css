@@ -71,8 +71,9 @@ body::before {
   font-family: 'Playfair Display', serif;
   font-size: 20px; font-weight: 900;
   background: linear-gradient(135deg, #c9952a 0%, #f0b429 50%, #ffe082 100%);
+  -webkit-background-clip: text;
   background-clip: text;
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
   line-height: 1; letter-spacing: -0.5px;
 }
 .logo-sub {

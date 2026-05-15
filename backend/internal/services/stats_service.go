@@ -21,7 +21,7 @@ func NewStatsService(chRepo repositories.ClickHouseRepo, cache CacheService) Sta
 }
 
 func (s *statsService) GetSummary(ctx context.Context) (map[string]interface{}, error) {
-	cacheKey := "stats_summary"
+	cacheKey := "stats:summary"
 	var summary map[string]interface{}
 
 	// 1. ลองดึงจาก Cache

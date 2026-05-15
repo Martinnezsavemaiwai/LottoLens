@@ -43,6 +43,14 @@ func (m *mockLottoRepo) FindLatest(ctx context.Context) (*db.LottoDrawModel, err
 	return nil, nil
 }
 
+func (m *mockLottoRepo) Count(ctx context.Context) (int, error) {
+	return len(m.draws), nil
+}
+
+func (m *mockLottoRepo) DeleteByPrize(ctx context.Context, prize string) (int, error) {
+	return 0, nil
+}
+
 // ── Mock ClickHouse Repository ──
 type mockClickHouseRepo struct{}
 
@@ -65,6 +73,26 @@ func (m *mockClickHouseRepo) GetMarkovTransitions(ctx context.Context, prizeType
 func (m *mockClickHouseRepo) GetRecencyWeightedStats(ctx context.Context, prizeType string) ([]repositories.WeightedResult, error) {
 	return nil, nil
 }
+func (m *mockClickHouseRepo) TruncateAnalytics(ctx context.Context) error { return nil }
+func (m *mockClickHouseRepo) Ping(ctx context.Context) error             { return nil }
+
+// ── Mock Cache Service ──
+type mockCacheService struct{}
+
+func (m *mockCacheService) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+	return nil
+}
+func (m *mockCacheService) Get(ctx context.Context, key string, dest interface{}) error {
+	return errors.New("not found")
+}
+func (m *mockCacheService) Delete(ctx context.Context, key string) error             { return nil }
+func (m *mockCacheService) DeleteByPrefix(ctx context.Context, prefix string) error { return nil }
+func (m *mockCacheService) Ping(ctx context.Context) error                          { return nil }
+
+// ── Mock Scraper Service ──
+type mockScraperService struct{}
+func (m *mockScraperService) FetchLatest() (*db.LottoDrawModel, error) { return nil, nil }
+func (m *mockScraperService) FetchByID(id string) (*db.LottoDrawModel, error) { return nil, nil }
 
 // ── Tests ──
 
@@ -76,7 +104,7 @@ func TestGetDraws(t *testing.T) {
 			{InnerLottoDraw: db.InnerLottoDraw{FirstPrize: "654321", Back2: "11"}},
 		},
 	}
-	service := NewLottoService(mockRepo, nil, nil, nil)
+	service := NewLottoService(mockRepo, &mockScraperService{}, &mockClickHouseRepo{}, &mockCacheService{})
 
 	// Execute
 	results, err := service.GetDraws(context.Background(), 1, 10)

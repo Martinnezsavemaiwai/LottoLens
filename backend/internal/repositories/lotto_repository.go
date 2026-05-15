@@ -11,6 +11,8 @@ type LottoRepository interface {
 	FindByDate(ctx context.Context, date time.Time) (*db.LottoDrawModel, error)
 	FindLatest(ctx context.Context) (*db.LottoDrawModel, error)
 	Upsert(ctx context.Context, draw *db.LottoDrawModel) (*db.LottoDrawModel, error)
+	Count(ctx context.Context) (int, error)
+	DeleteByPrize(ctx context.Context, prize string) (int, error)
 }
 
 type lottoRepository struct {
@@ -82,4 +84,21 @@ func (r *lottoRepository) Upsert(ctx context.Context, d *db.LottoDrawModel) (*db
 		db.LottoDraw.Back3.Set(d.Back3),
 		db.LottoDraw.Back2.Set(d.Back2),
 	).Exec(ctx)
+}
+func (r *lottoRepository) Count(ctx context.Context) (int, error) {
+	draws, err := r.client.LottoDraw.FindMany().Exec(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return len(draws), nil
+}
+
+func (r *lottoRepository) DeleteByPrize(ctx context.Context, prize string) (int, error) {
+	res, err := r.client.LottoDraw.FindMany(
+		db.LottoDraw.FirstPrize.Equals(prize),
+	).Delete().Exec(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return res.Count, nil
 }

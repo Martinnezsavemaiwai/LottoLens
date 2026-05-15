@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -155,7 +156,15 @@ func main() {
 		})
 	})
 
-	// 5. Start Server
+	// 5. Cold Start Auto-Seeding
+	go func() {
+		ctx := context.Background()
+		if err := lottoService.AutoSeed(ctx); err != nil {
+			log.Printf("⚠️ Auto-seed check failed: %v", err)
+		}
+	}()
+
+	// 6. Start Server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
