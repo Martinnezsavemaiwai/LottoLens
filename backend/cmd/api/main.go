@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -13,32 +13,41 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// 0. Load .env file
+	// 0. Setup Structured Logging (log/slog)
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	slog.SetDefault(slog.New(jsonHandler))
+
+	// 0.1 Load .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️ Warning: .env file not found, using system environment variables")
+		slog.Warn("Warning: .env file not found, using system environment variables")
 	}
 
 	// 1. Initialize DB Clients
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("❌ DATABASE_URL is not set in .env or environment")
+		slog.Error("DATABASE_URL is not set in .env or environment")
+		os.Exit(1)
 	}
 
 	client := db.NewClient(db.WithDatasourceURL(dbURL))
 	if err := client.Connect(); err != nil {
-		log.Fatalf("❌ Postgres error: %v", err)
+		slog.Error("Postgres error", "error", err)
+		os.Exit(1)
 	}
 	defer client.Disconnect()
 
 	chRepo, err := repositories.NewClickHouseRepo(os.Getenv("CLICKHOUSE_HOST"))
 	if err != nil {
-		log.Printf("⚠️ ClickHouse error: %v", err)
+		slog.Warn("ClickHouse error", "error", err)
 	} else {
 		chRepo.InitAnalyticsTable()
 	}
@@ -60,10 +69,10 @@ func main() {
 
 	// 3. Initialize Fiber App
 	app := fiber.New(fiber.Config{
-		AppName: "Thai Lotto API v1",
+		AppName: "Thai Lotto API v1 (Hardened)",
 	})
 
-	// Middleware
+	// Global Middleware
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
@@ -85,12 +94,26 @@ func main() {
 	// Stats Group (Explicit registration)
 	api.Get("/stats/frequency", statsHandler.GetFrequency)
 	api.Get("/stats/positional", statsHandler.GetPositional)
-	api.Get("/ai/context", aiHandler.GetContext)
+
+	// AI Context with Rate Limiter (Hardening Phase)
+	api.Get("/ai/context", limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			slog.Warn("Rate limit reached", "ip", c.IP(), "path", c.Path())
+			return c.Status(429).JSON(fiber.Map{
+				"error":   "Too many AI requests",
+				"message": "Limit: 5 requests per 1 minute. Please wait.",
+				"status":  429,
+			})
+		},
+	}), aiHandler.GetContext)
+
 	api.Get("/stats/summary", func(c *fiber.Ctx) error {
-		log.Println("📡 Request reached /stats/summary")
+		slog.Info("📡 Request reached /stats/summary")
 		summary, err := statsService.GetSummary(c.Context())
 		if err != nil {
-			log.Printf("❌ Summary Error: %v", err)
+			slog.Error("Summary Error", "error", err)
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(summary)
@@ -100,9 +123,8 @@ func main() {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).JSON(fiber.Map{
 			"message": "Welcome to Thai Lotto API",
-			"version": "v1.0.0",
+			"version": "v1.1.0-hardened",
 			"status":  "healthy",
-			"docs":    "/api/v1/draws",
 		})
 	})
 
@@ -113,7 +135,6 @@ func main() {
 		
 		// 1. Check Postgres (Prisma)
 		pgStatus := "up"
-		// Simple connectivity check
 		if _, err := client.Prisma.ExecuteRaw("SELECT 1").Exec(ctx); err != nil {
 			pgStatus = "down: " + err.Error()
 			status = 503
@@ -147,12 +168,12 @@ func main() {
 		})
 	})
 
-	// 404 Handler (Debug Server Identity)
+	// 404 Handler
 	app.Use(func(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{
 			"error":          "Route not found",
 			"requested_path": c.Path(),
-			"server_version": "Stats-Explicit-Fix",
+			"server_version": "Hardened-v1",
 		})
 	})
 
@@ -160,7 +181,7 @@ func main() {
 	go func() {
 		ctx := context.Background()
 		if err := lottoService.AutoSeed(ctx); err != nil {
-			log.Printf("⚠️ Auto-seed check failed: %v", err)
+			slog.Error("Auto-seed check failed", "error", err)
 		}
 	}()
 
@@ -170,8 +191,9 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("🔥 Server is starting on port %s [Version: Stats-Explicit-Fix]", port)
+	slog.Info("🔥 Server is starting", "port", port, "version", "Hardened-v1")
 	if err := app.Listen(":" + port); err != nil {
-		log.Fatalf("❌ Failed to start server: %v", err)
+		slog.Error("Failed to start server", "error", err)
+		os.Exit(1)
 	}
 }

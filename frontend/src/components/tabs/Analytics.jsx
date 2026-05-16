@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { DBall } from "../../utils/helpers";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFrequencyStats, fetchPositionalStats } from "../../services/api";
+import Skeleton from "../ui/Skeleton";
 
 /**
  * Tab: Analytics — สถิติ Positional, Hot/Cold, Pattern งวด 1 vs 16
@@ -56,18 +57,27 @@ export default function Analytics({ stats: localStats, history }) {
   return (
     <div className="fade">
       {/* Overview */}
-      <div className="g4 mt">
-        <div className="sbox"><div className="sv">{history.length}</div><div className="sl">งวดทั้งหมด</div></div>
+      <div className="grid-res grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt">
         <div className="sbox">
-          <div className="sv" style={{color:"var(--red)",fontSize:18}}>{stats.hot.map(h=>h.d).join(" · ")}</div>
+          <div className="sv">{stats ? history.length : <Skeleton width={60} height={28} className="mx-auto" />}</div>
+          <div className="sl">งวดทั้งหมด</div>
+        </div>
+        <div className="sbox">
+          <div className="sv" style={{color:"var(--red)",fontSize:18}}>
+            {stats ? stats.hot.map(h=>h.d).join(" · ") : <Skeleton width={100} height={24} className="mx-auto" />}
+          </div>
           <div className="sl">🔥 Hot Digits</div>
         </div>
         <div className="sbox">
-          <div className="sv" style={{color:"var(--blue)",fontSize:18}}>{stats.cold.map(c=>c.d).join(" · ")}</div>
+          <div className="sv" style={{color:"var(--blue)",fontSize:18}}>
+            {stats ? stats.cold.map(c=>c.d).join(" · ") : <Skeleton width={100} height={24} className="mx-auto" />}
+          </div>
           <div className="sl">🧊 Cold Digits</div>
         </div>
         <div className="sbox">
-          <div className="sv" style={{fontSize:18}}>{stats.combo.slice(0,3).map(c=>c.n).join(" · ")}</div>
+          <div className="sv" style={{fontSize:18}}>
+            {stats ? stats.combo.slice(0,3).map(c=>c.n).join(" · ") : <Skeleton width={120} height={24} className="mx-auto" />}
+          </div>
           <div className="sl">🏆 Top เลขท้าย 2 ตัว</div>
         </div>
       </div>
@@ -84,7 +94,13 @@ export default function Analytics({ stats: localStats, history }) {
         </div>
         <div className="pos-grid" style={{gridTemplateColumns:`repeat(${posLabels[posMode].length},1fr)`, position: 'relative', minHeight: 120}}>
           {isPosLoading ? (
-             <div style={{gridColumn: '1/-1', textAlign: 'center', padding: 40, color: 'var(--txt3)'}}>⏳ กำลังคำนวณสถิติจริงจาก ClickHouse...</div>
+             <div style={{gridColumn: '1/-1', display: 'grid', gridTemplateColumns: 'inherit', gap: 10, width: '100%'}}>
+               {posLabels[posMode].map((_, i) => (
+                 <div key={i} className="pos-cell" style={{border: 'none', background: 'transparent'}}>
+                   <Skeleton height={80} />
+                 </div>
+               ))}
+             </div>
           ) : mappedPosFreq ? (
             posLabels[posMode].map((label, i) => {
               const arr = mappedPosFreq[i];
@@ -105,23 +121,23 @@ export default function Analytics({ stats: localStats, history }) {
       </div>
 
       {/* Hot / Cold / Overdue */}
-      <div className="g3">
+      <div className="grid-res grid-cols-1 md:grid-cols-3">
         <div className="card">
           <div className="ctitle">🔥 Hot Digits <span className="csub">ออกบ่อยที่สุด</span></div>
           <div className="dballs">
-            {stats.hot.map(h=><DBall key={h.d} d={h.d} cls="hot" count={h.count}/>)}
+            {stats ? stats.hot.map(h=><DBall key={h.d} d={h.d} cls="hot" count={h.count}/>) : <Skeleton height={52} width="100%" />}
           </div>
         </div>
         <div className="card">
           <div className="ctitle">🧊 Cold Digits <span className="csub">ออกน้อยที่สุด</span></div>
           <div className="dballs">
-            {stats.cold.map(c=><DBall key={c.d} d={c.d} cls="cold" count={c.count}/>)}
+            {stats ? stats.cold.map(c=><DBall key={c.d} d={c.d} cls="cold" count={c.count}/>) : <Skeleton height={52} width="100%" />}
           </div>
         </div>
         <div className="card">
           <div className="ctitle">⏳ Overdue <span className="csub">ทิ้งช่วงนานสุด</span></div>
           <div className="dballs">
-            {stats.overdue.map(o=><DBall key={o.d} d={o.d} cls="over" count={o.count} label={o.gap>=999?"ไม่ปรากฏ":`${o.gap}งวด`}/>)}
+            {stats ? stats.overdue.map(o=><DBall key={o.d} d={o.d} cls="over" count={o.count} label={o.gap>=999?"ไม่ปรากฏ":`${o.gap}งวด`}/>) : <Skeleton height={52} width="100%" />}
           </div>
         </div>
       </div>
@@ -129,38 +145,50 @@ export default function Analytics({ stats: localStats, history }) {
       {/* Structural Stats */}
       <div className="card">
         <div className="ctitle">📊 โครงสร้างความน่าจะเป็น (Structural Statistics)</div>
-        <div className="g2">
+        <div className="grid-res grid-cols-1 lg:grid-cols-2">
           <div>
-            {[
-              [stats.deep.evenPct,"เลขคู่","var(--blue)",stats.deep.oddPct,"เลขคี่","var(--red)"],
-              [stats.deep.loPct,"เลขต่ำ 0-4","var(--green)",stats.deep.hiPct,"เลขสูง 5-9","var(--gold)"],
-            ].map(([v1,l1,c1,v2,l2,c2],i)=>(
-              <div className="pbar" key={i}>
+            {stats ? (
+              [
+                [stats.deep.evenPct,"เลขคู่","var(--blue)",stats.deep.oddPct,"เลขคี่","var(--red)"],
+                [stats.deep.loPct,"เลขต่ำ 0-4","var(--green)",stats.deep.hiPct,"เลขสูง 5-9","var(--gold)"],
+              ].map(([v1,l1,c1,v2,l2,c2],i)=>(
+                <div className="pbar" key={i}>
+                  <div className="pbar-lbrow">
+                    <span style={{color:c1}}>{l1} {v1}%</span>
+                    <span style={{color:c2}}>{l2} {v2}%</span>
+                  </div>
+                  <div className="pbar-track">
+                    <div className="pbar-fill" style={{width:`${v1}%`,background:c1}}/>
+                    <div className="pbar-fill" style={{width:`${v2}%`,background:c2}}/>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <Skeleton height={80} className="mb" />
+            )}
+            {stats && (
+              <div className="pbar">
                 <div className="pbar-lbrow">
-                  <span style={{color:c1}}>{l1} {v1}%</span>
-                  <span style={{color:c2}}>{l2} {v2}%</span>
+                  <span style={{color:"var(--purple)"}}>โอกาสเลขเบิ้ล เลขท้าย 2 ตัว (00,11,...)</span>
+                  <span style={{color:"var(--txt)",fontWeight:600}}>{stats.deep.dbl2Pct}%</span>
                 </div>
                 <div className="pbar-track">
-                  <div className="pbar-fill" style={{width:`${v1}%`,background:c1}}/>
-                  <div className="pbar-fill" style={{width:`${v2}%`,background:c2}}/>
+                  <div className="pbar-fill" style={{width:`${stats.deep.dbl2Pct}%`,background:"var(--purple)"}}/>
                 </div>
               </div>
-            ))}
-            <div className="pbar">
-              <div className="pbar-lbrow">
-                <span style={{color:"var(--purple)"}}>โอกาสเลขเบิ้ล เลขท้าย 2 ตัว (00,11,...)</span>
-                <span style={{color:"var(--txt)",fontWeight:600}}>{stats.deep.dbl2Pct}%</span>
-              </div>
-              <div className="pbar-track">
-                <div className="pbar-fill" style={{width:`${stats.deep.dbl2Pct}%`,background:"var(--purple)"}}/>
-              </div>
-            </div>
+            )}
           </div>
           <div style={{fontSize:12,color:"var(--txt3)",lineHeight:1.9,padding:"4px 0"}}>
-            <div>📌 ฐานข้อมูล {history.length} งวด (หวยไทย)</div>
-            <div>📌 เลขคู่{stats.deep.evenPct>50?"ออกบ่อยกว่า":"ออกน้อยกว่า"}เลขคี่</div>
-            <div>📌 เลขต่ำ{stats.deep.loPct>50?"ออกบ่อยกว่า":"ออกน้อยกว่า"}เลขสูง</div>
-            <div>📌 เลขเบิ้ล เลขท้าย 2 ตัวมีโอกาส <strong style={{color:"var(--purple)"}}>{stats.deep.dbl2Pct}%</strong></div>
+            {stats ? (
+              <>
+                <div>📌 ฐานข้อมูล {history.length} งวด (หวยไทย)</div>
+                <div>📌 เลขคู่{stats.deep.evenPct>50?"ออกบ่อยกว่า":"ออกน้อยกว่า"}เลขคี่</div>
+                <div>📌 เลขต่ำ{stats.deep.loPct>50?"ออกบ่อยกว่า":"ออกน้อยกว่า"}เลขสูง</div>
+                <div>📌 เลขเบิ้ล เลขท้าย 2 ตัวมีโอกาส <strong style={{color:"var(--purple)"}}>{stats.deep.dbl2Pct}%</strong></div>
+              </>
+            ) : (
+              <Skeleton height={60} />
+            )}
           </div>
         </div>
       </div>
@@ -170,26 +198,26 @@ export default function Analytics({ stats: localStats, history }) {
         <div className="ctitle">📅 Pattern งวดวันที่ 1 vs 16
           <span className="csub">เลขท้าย 2 ตัวที่ออกบ่อยแยกตามวันออกรางวัล</span>
         </div>
-        <div className="g2">
+        <div className="grid-res grid-cols-1 lg:grid-cols-2">
           <div>
             <div style={{fontSize:10,color:"var(--gold)",marginBottom:8,letterSpacing:1}}>📌 งวดวันที่ 1</div>
             <div className="chips">
-              {Object.entries(stats.day1Freq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c],i)=>(
+              {stats ? Object.entries(stats.day1Freq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c],i)=>(
                 <span key={n} className={`chip${i<3?" top":""}`}>
                   <span className="chip-num">{n}</span><span className="chip-cnt">×{c}</span>
                 </span>
-              ))}
+              )) : <Skeleton height={32} width="100%" />}
             </div>
           </div>
           <div>
             <div style={{fontSize:10,color:"var(--cyan)",marginBottom:8,letterSpacing:1}}>📌 งวดวันที่ 16</div>
             <div className="chips">
-              {Object.entries(stats.day16Freq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c],i)=>(
+              {stats ? Object.entries(stats.day16Freq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c],i)=>(
                 <span key={n} className={`chip${i<3?" top":""}`} style={i<3?{borderColor:"var(--cyan)"}:{}}>
                   <span className="chip-num" style={i<3?{color:"var(--cyan)"}:{}}>{n}</span>
                   <span className="chip-cnt">×{c}</span>
                 </span>
-              ))}
+              )) : <Skeleton height={32} width="100%" />}
             </div>
           </div>
         </div>
@@ -202,7 +230,9 @@ export default function Analytics({ stats: localStats, history }) {
         </div>
         <div className="chips">
           {isFreqLoading ? (
-            <div style={{padding: 20, color: 'var(--txt3)'}}>กำลังดึงอันดับเลขฮิต...</div>
+            <div style={{display: 'flex', gap: 8, width: '100%'}}>
+              {[1,2,3,4,5].map(i => <Skeleton key={i} width={60} height={32} />)}
+            </div>
           ) : freqData?.map((p, i) => (
             <span key={p.number} className={`chip${i < 3 ? " top" : ""}`}>
               <span className="chip-num">{p.number}</span><span className="chip-cnt">×{p.count}</span>
@@ -226,26 +256,26 @@ export default function Analytics({ stats: localStats, history }) {
       </div>
 
       {/* Back3 + Front3 */}
-      <div className="g2">
+      <div className="grid-res grid-cols-1 lg:grid-cols-2">
         <div className="card">
           <div className="ctitle">🔗 เลขท้าย 3 ตัว — Top 12 <span className="pb-back3 prize-badge">เลขท้าย 3 ตัว</span></div>
           <div className="chips">
-            {stats.back3Arr.slice(0,12).map((p,i)=>(
+            {stats ? stats.back3Arr.slice(0,12).map((p,i)=>(
               <span key={p.n+i} className={`chip${i<3?" top":""}`}>
                 <span className="chip-num">{p.n}</span><span className="chip-cnt">×{p.count}</span>
               </span>
-            ))}
+            )) : <Skeleton height={32} width="100%" />}
           </div>
         </div>
         <div className="card">
           <div className="ctitle">🔗 เลขหน้า 3 ตัว — Top 12 <span className="pb-front3 prize-badge">เลขหน้า 3 ตัว</span></div>
           <div className="chips">
-            {stats.front3Arr.slice(0,12).map((p,i)=>(
+            {stats ? stats.front3Arr.slice(0,12).map((p,i)=>(
               <span key={p.n+i} className={`chip${i<3?" top":""}`} style={i<3?{borderColor:"var(--green)"}:{}}>
                 <span className="chip-num" style={i<3?{color:"#66bb6a"}:{}}>{p.n}</span>
                 <span className="chip-cnt">×{p.count}</span>
               </span>
-            ))}
+            )) : <Skeleton height={32} width="100%" />}
           </div>
         </div>
       </div>

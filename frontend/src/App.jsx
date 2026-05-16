@@ -5,6 +5,7 @@ import { getStats } from "./utils/mathEngine";
 import { fetchDraws, fetchStatsSummary } from "./services/api";
 import { fmtTH, mapBackendDraw } from "./utils/helpers";
 import Loading from "./components/common/Loading";
+import Skeleton from "./components/ui/Skeleton";
 import Analytics from "./components/tabs/Analytics";
 import Trends    from "./components/tabs/Trends";
 import AIPredict from "./components/tabs/AIPredict";
@@ -63,7 +64,7 @@ export default function App() {
 
   const last = history[0];
 
-  if (histLoading) return <div className="app"><Loading message="กำลังเชื่อมต่อฐานข้อมูล Go Backend..."/></div>;
+  // Removed full-screen Loading return to prevent CLS
   if (histError) return <div className="app"><div className="card mt error">❌ ไม่สามารถดึงข้อมูลจาก API ได้ กรุณาตรวจสอบ Backend</div></div>;
 
   return (
@@ -73,39 +74,48 @@ export default function App() {
         <div className="hdr-in">
           <div className="logo-wrap">
             <div className="logo">🏆 ThaiLotto AI</div>
-            <div className="logo-sub">สลากกินแบ่งรัฐบาล · {history.length} งวด</div>
+            <div className="logo-sub">สลากกินแบ่งรัฐบาล · {histLoading ? "..." : history.length} งวด</div>
           </div>
 
-          {last ? (
-            <div className="hdr-prize" aria-label="ผลล่าสุด">
-              <div className="prize-pill">
-                <div className="prize-lbl">งวด {fmtTH(last.dateTH)}</div>
-                <div className="prize-num first">{last.first}</div>
-              </div>
-              <div className="prize-pill">
-                <div className="prize-lbl">เลขหน้า 3 ตัว</div>
-                <div className="prize-num" style={{color:"var(--green)",fontSize:13}}>
-                  {last.front3.join(" / ")}
+          <div className="hdr-prize" aria-label="ผลล่าสุด">
+            {histLoading ? (
+              // Header Skeleton Phase
+              <>
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="prize-pill" style={{border: 'none', background: 'transparent', padding: 0}}>
+                    <Skeleton width={i === 1 ? 100 : 80} height={42} />
+                  </div>
+                ))}
+              </>
+            ) : last ? (
+              <>
+                <div className="prize-pill">
+                  <div className="prize-lbl">งวด {fmtTH(last.dateTH)}</div>
+                  <div className="prize-num first">{last.first}</div>
                 </div>
-              </div>
-              <div className="prize-pill">
-                <div className="prize-lbl">เลขท้าย 3 ตัว</div>
-                <div className="prize-num" style={{color:"var(--blue)",fontSize:13}}>
-                  {last.back3.join(" / ")}
+                <div className="prize-pill">
+                  <div className="prize-lbl">เลขหน้า 3 ตัว</div>
+                  <div className="prize-num" style={{color:"var(--green)",fontSize:13}}>
+                    {last.front3.join(" / ")}
+                  </div>
                 </div>
-              </div>
-              <div className="prize-pill">
-                <div className="prize-lbl">เลขท้าย 2 ตัว</div>
-                <div className="prize-num" style={{color:"var(--red)",fontSize:20,letterSpacing:5}}>
-                  {last.back2}
+                <div className="prize-pill">
+                  <div className="prize-lbl">เลขท้าย 3 ตัว</div>
+                  <div className="prize-num" style={{color:"var(--blue)",fontSize:13}}>
+                    {last.back3.join(" / ")}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="hdr-prize" style={{opacity:0.5}}>
-              <div style={{fontSize:11,color:"var(--txt3)"}}>รอการ Sync ข้อมูล...</div>
-            </div>
-          )}
+                <div className="prize-pill">
+                  <div className="prize-lbl">เลขท้าย 2 ตัว</div>
+                  <div className="prize-num" style={{color:"var(--red)",fontSize:20,letterSpacing:5}}>
+                    {last.back2}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{fontSize:11,color:"var(--txt3)", opacity: 0.5}}>รอการ Sync ข้อมูล...</div>
+            )}
+          </div>
 
           <nav className="tabs" aria-label="เมนูหลัก">
             {TABS.map(t => (

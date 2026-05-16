@@ -2,6 +2,7 @@ import { useState } from "react";
 import { callGemini } from "../../services/gemini";
 import { fetchAIContext } from "../../services/api";
 import { getNextDraw, parseJson } from "../../utils/helpers";
+import Skeleton from "../ui/Skeleton";
 
 /**
  * Tab: AIPredict — วิเคราะห์หวยด้วย Gemini AI
@@ -161,7 +162,7 @@ ${resp.context}
 
       {loading && (
         <div className="card mt" style={{textAlign:"center",padding:28}}>
-          <span className="spin" style={{fontSize:28}}>🔮</span>
+          <Skeleton height={200} className="mb" />
           <div style={{fontSize:13,color:"var(--txt3)",marginTop:10}}>
             กำลังรัน Markov + Positional Entropy + Z-score + Day Pattern...
           </div>
@@ -178,7 +179,7 @@ ${resp.context}
             </div>
           )}
 
-          <div className="g2">
+          <div className="grid-res grid-cols-1 md:grid-cols-2">
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
               <div className="card" style={{textAlign:"center"}}>
                 <div className="ctitle" style={{justifyContent:"center"}}>🎯 เลขเด่น (Core)</div>
