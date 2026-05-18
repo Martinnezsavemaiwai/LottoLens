@@ -101,11 +101,15 @@ body::before {
 
 /* Tabs */
 .tabs {
-  display: flex; gap: 2px; flex-shrink: 0;
+  display: flex; gap: 2px; flex-shrink: 1;
   background: rgba(255,255,255,0.03);
   padding: 3px; border-radius: 10px;
   border: 1px solid var(--bdr2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   padding: 5px 12px; border-radius: 8px;
   font-size: 11px; font-weight: 600; font-family: 'Sarabun', sans-serif;
@@ -306,7 +310,7 @@ body::before {
   transition: all 0.2s; font-family: 'Sarabun',sans-serif;
 }
 .fchip.on  { border-color: var(--gold); color: var(--gold2); background: rgba(201,149,42,0.1); }
-.fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fchips { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
 
 /* ── Toggle ── */
 .tgl {
@@ -402,16 +406,42 @@ body::before {
 @keyframes afade { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 @keyframes aspin { to{transform:rotate(360deg)} }
 @keyframes apulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-@keyframes shimmer {
-  0%{background-position:-200% 0} 100%{background-position:200% 0}
+/* ── Responsive Grids ── */
+.grid-res { display: grid; gap: 14px; width: 100%; }
+.grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+
+@media (min-width: 640px) {
+  .sm\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 768px) {
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
 }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--s1); }
-::-webkit-scrollbar-thumb { background: rgba(201,149,42,0.2); border-radius: 2px; }
+/* ── Shimmer Effect ── */
+.shimmer {
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0.03) 25%, 
+    rgba(255,255,255,0.08) 50%, 
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 
 @media(max-width:700px) {
   .pos-grid { grid-template-columns:repeat(3,1fr); }
+  /* We will migrate away from fixed .g4 class to responsive utility classes */
   .g4,.g5 { grid-template-columns:repeat(2,1fr); }
   .cal-grid { grid-template-columns:repeat(6,1fr); }
   .hdr-prize { display:none; }

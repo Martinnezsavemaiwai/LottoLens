@@ -60,7 +60,7 @@ export default function HistTab({ history }) {
             {syncMutation.isPending ? "⏳ กำลัง Sync..." : "🔄 Sync จาก Sanook (Auto)"}
           </button>
         </div>
-        <div className="g2" style={{marginBottom:12}}>
+        <div className="grid-res grid-cols-1 md:grid-cols-2" style={{marginBottom:12}}>
           <div>
             <label className="lbl">วันที่ออกรางวัล (คศ.)</label>
             <input type="date" className="inp" value={newDate} onChange={e=>setNewDate(e.target.value)}/>
@@ -71,7 +71,7 @@ export default function HistTab({ history }) {
               value={newFirst} onChange={e=>setNewFirst(e.target.value.replace(/\D/g,""))}/>
           </div>
         </div>
-        <div className="g4" style={{marginBottom:12}}>
+        <div className="grid-res grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{marginBottom:12}}>
           {[
             ["เลขหน้า 3 ตัวชุดที่ 1", newFront3a, setNewFront3a, 3],
             ["เลขหน้า 3 ตัวชุดที่ 2", newFront3b, setNewFront3b, 3],

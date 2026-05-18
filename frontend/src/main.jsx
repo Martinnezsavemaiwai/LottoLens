@@ -7,8 +7,10 @@ import App from "./App.jsx";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
+      staleTime: 1000 * 60 * 15, // 15 minutes
+      gcTime: 1000 * 60 * 30,    // 30 minutes
+      retry: 2,
+      refetchOnWindowFocus: false, // Prevent refetch on tab switch
     },
   },
 });
