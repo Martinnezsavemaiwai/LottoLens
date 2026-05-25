@@ -73,3 +73,35 @@ model LottoDraw {
   @@index([drawDay])
   @@index([back2])
 }
+
+/// ตารางเก็บผลหวยลาวพัฒนาแต่ละงวด
+model LaoLotteryResult {
+  /// UUID Primary Key — สร้างอัตโนมัติ
+  id String @id @default(uuid())
+
+  /// วันที่ออกรางวัล — Unique เพื่อป้องกันข้อมูลซ้ำ
+  drawDate DateTime @unique
+
+  /// 4 ตัวท้าย (Slice index 2-5 จากเลข 6 หลัก)
+  tail4 String
+
+  /// 3 ตัวบน (Slice index 3-5)
+  top3 String
+
+  /// 2 ตัวบน (Slice index 4-5)
+  top2 String
+
+  /// 2 ตัวล่าง (Slice index 2-3)
+  bottom2 String
+
+  /// ข้อมูลยืนยันจากแหล่งอ้างอิง
+  isVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([drawDate])
+  @@index([tail4])
+  @@index([top2])
+  @@index([bottom2])
+}

@@ -67,6 +67,9 @@ services:
     restart: always
     ports:
       - "8081:8080"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/lotto_db?schema=public
       - CLICKHOUSE_HOST=clickhouse_v2

@@ -2,12 +2,10 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"lotto-backend/internal/repositories"
 	"lotto-backend/prisma/db"
-	"net/http"
 	"time"
 )
 
@@ -116,76 +114,104 @@ func (s *lottoService) AutoSeed(ctx context.Context) error {
 		return err
 	}
 
-	if count > 0 {
+	targetCount := 240
+	if count >= targetCount {
 		log.Printf("📊 Database already has %d draws, skipping auto-seed", count)
 		return nil
 	}
 
-	log.Println("🚀 Cold Start detected! Automatically seeding historical data (target ~240 draws)...")
-
-	// We fetch 12 pages (12 * 20 = 240 draws)
-	maxPages := 12
-	totalSaved := 0
+	log.Printf("🚀 Backfill/Seeding detected! Database has %d draws, target is at least %d draws. Starting background backfiller...", count, targetCount)
 
 	go func() {
 		bgCtx := context.Background()
-		for page := 1; page <= maxPages; page++ {
-			listURL := fmt.Sprintf("https://lotto.api.rayriffy.com/list/%d", page)
-			resp, err := http.Get(listURL)
-			if err != nil {
-				log.Printf("❌ Failed to fetch list page %d: %v", page, err)
-				continue
-			}
-
-			var listData struct {
-				Response []struct {
-					ID string `json:"id"`
-				} `json:"response"`
-			}
-			if err := json.NewDecoder(resp.Body).Decode(&listData); err != nil {
-				resp.Body.Close()
-				continue
-			}
-			resp.Body.Close()
-
-			if len(listData.Response) == 0 {
+		
+		loc, err := time.LoadLocation("Asia/Bangkok")
+		var now time.Time
+		if err != nil {
+			now = time.Now().UTC().Add(7 * time.Hour)
+		} else {
+			now = time.Now().In(loc)
+		}
+		
+		currYear := now.Year()
+		currMonth := now.Month()
+		
+		totalSaved := 0
+		failuresInARow := 0
+		
+		// Loop backwards up to 130 months (~10 years, which has 260 possible draws)
+		for i := 0; i < 130; i++ {
+			c, err := s.repo.Count(bgCtx)
+			if err == nil && c >= targetCount {
+				log.Printf("🏁 Target count of %d draws reached! Historical backfill successfully completed. Total saved in this session: %d", targetCount, totalSaved)
 				break
 			}
-
-			for _, item := range listData.Response {
-				// Check if exists (safety)
-				// Note: we just checked count == 0, but for robustness:
-				draw, err := s.scraper.FetchByID(item.ID)
+			
+			targetMonth := currMonth - time.Month(i)
+			targetYear := currYear
+			for targetMonth <= 0 {
+				targetMonth += 12
+				targetYear -= 1
+			}
+			
+			daysToTry := []int{16, 1}
+			
+			for _, day := range daysToTry {
+				checkDate := time.Date(targetYear, targetMonth, day, 0, 0, 0, 0, time.UTC)
+				
+				// Skip if this date already exists in the database
+				exists, err := s.repo.FindByDate(bgCtx, checkDate)
+				if err == nil && exists != nil {
+					continue
+				}
+				
+				id := fmt.Sprintf("%02d%02d%04d", day, int(targetMonth), targetYear)
+				draw, err := s.scraper.FetchByID(id)
 				if err != nil {
-					log.Printf("⚠️ Skip draw %s: %v", item.ID, err)
+					// Try shifted dates if standard date fails (e.g. May 2nd, Jan 2nd, Dec 30th)
+					if targetMonth == time.May && day == 1 {
+						draw, err = s.scraper.FetchByID(fmt.Sprintf("0205%04d", targetYear))
+					}
+					if targetMonth == time.January && day == 1 {
+						draw, err = s.scraper.FetchByID(fmt.Sprintf("0201%04d", targetYear))
+						if err != nil {
+							draw, err = s.scraper.FetchByID(fmt.Sprintf("3012%04d", targetYear-1))
+						}
+					}
+				}
+				
+				if err != nil || draw == nil || draw.FirstPrize == "" || draw.FirstPrize == "xxxxxx" {
+					log.Printf("⚠️ Failed to fetch draw %s: %v", id, err)
+					failuresInARow++
+					if failuresInARow > 15 {
+						log.Printf("⚠️ Too many failures in a row (%d), stopping historical backfill to protect GLO API.", failuresInARow)
+						break
+					}
 					continue
 				}
-
-				if draw.FirstPrize == "" || draw.Back2 == "" || draw.FirstPrize == "xxxxxx" {
-					continue
-				}
-
+				
+				failuresInARow = 0
+				
 				saved, err := s.repo.Upsert(bgCtx, draw)
 				if err == nil {
 					totalSaved++
-					// Also sync to ClickHouse
+					log.Printf("✅ Backfiller successfully saved historical draw: %s (First Prize: %s)", draw.DrawDate.Format("2006-01-02"), draw.FirstPrize)
 					if s.chRepo != nil {
 						_ = s.chRepo.InsertDrawAnalytics(bgCtx, saved)
 					}
 				}
 				
-				// Small delay to avoid 429
-				time.Sleep(800 * time.Millisecond)
+				// Respectful rate limit delay (100ms)
+				time.Sleep(100 * time.Millisecond)
 			}
-			log.Printf("✅ Auto-seed progress: Page %d finished. Total saved: %d", page, totalSaved)
+			
+			if failuresInARow > 15 {
+				break
+			}
 		}
 		
-		log.Printf("🏁 Auto-seed complete! Total draws: %d. Invalidating cache...", totalSaved)
-		
-		// Final cleanup for any future placeholder draws that might have slipped in
-		_, _ = s.repo.DeleteByPrize(bgCtx, "xxxxxx")
-		
 		_ = s.cache.DeleteByPrefix(bgCtx, "stats:")
+		log.Printf("🏁 Seeding session completed. Total draws saved in this run: %d", totalSaved)
 	}()
 
 	return nil

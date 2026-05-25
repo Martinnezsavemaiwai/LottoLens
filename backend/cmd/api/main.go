@@ -67,6 +67,11 @@ func main() {
 	aiService := services.NewAIService(chRepo, lottoRepo)
 	aiHandler := handlers.NewAIHandler(aiService)
 
+	// ── Lao Lottery Layer ──
+	laoRepo    := repositories.NewLaoRepository(client)
+	laoService := services.NewLaoService(laoRepo, cacheService)
+	laoHandler := handlers.NewLaoHandler(laoService, lottoService)
+
 	// 3. Initialize Fiber App
 	app := fiber.New(fiber.Config{
 		AppName: "Thai Lotto API v1 (Hardened)",
@@ -90,6 +95,13 @@ func main() {
 	draws.Get("/:date", lottoHandler.GetByDate)
 	draws.Post("/sync", lottoHandler.Sync)
 	draws.Post("/rebuild-analytics", lottoHandler.RebuildAnalytics)
+
+	// ── API v2 — Multi-Lottery Engine ──
+	v2 := app.Group("/api/v2")
+	lottery := v2.Group("/lottery")
+	lottery.Get("/history", laoHandler.GetHistory)
+	lottery.Get("/stats",   laoHandler.GetStats)
+	lottery.Post("/result", laoHandler.PostResult)
 
 	// Stats Group (Explicit registration)
 	api.Get("/stats/frequency", statsHandler.GetFrequency)
