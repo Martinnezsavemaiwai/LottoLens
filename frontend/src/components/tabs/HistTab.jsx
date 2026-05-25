@@ -158,7 +158,7 @@ export default function HistTab({ history }) {
               ) : (
                 <>
                   <RefreshCw size={12} />
-                  <span>Sync จาก Sanook (Auto)</span>
+                  <span>อัปเดตผลสลากกินแบ่งรัฐบาล</span>
                 </>
               )}
             </button>

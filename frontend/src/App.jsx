@@ -10,13 +10,14 @@ import Loading from "./components/common/Loading";
 import Skeleton from "./components/ui/Skeleton";
 import LotterySwitcher from "./components/common/LotterySwitcher";
 import { useLottery } from "./context/LotteryContext";
+import { useTheme } from "./context/ThemeContext";
 import Analytics from "./components/tabs/Analytics";
 import Trends    from "./components/tabs/Trends";
 import AIPredict from "./components/tabs/AIPredict";
 import Tools     from "./components/tabs/Tools";
 import HistTab   from "./components/tabs/HistTab";
 
-import { BarChart3, TrendingUp, Bot, Dices, History, AlertTriangle } from "lucide-react";
+import { BarChart3, TrendingUp, Bot, Dices, History, AlertTriangle, Sun, Moon } from "lucide-react";
 
 const TABS = [
   { id:"analytics", label:"สถิติ", icon: BarChart3 },
@@ -29,6 +30,7 @@ const TABS = [
 export default function App() {
   const [tab, setTab] = useState("analytics");
   const { lotteryType } = useLottery();
+  const { theme, toggleTheme } = useTheme();
 
   // 1. Fetch History (Draws) dynamically based on active lotteryType
   const { 
@@ -130,6 +132,7 @@ export default function App() {
           {/* Premium Glassmorphic Switcher */}
           <LotterySwitcher />
 
+
           <div className="hdr-prize" aria-label="ผลล่าสุด">
             {histLoading ? (
               // Header Skeleton Phase
@@ -217,6 +220,29 @@ export default function App() {
               );
             })}
           </nav>
+
+          {/* Theme Toggle Button */}
+          <button 
+            className="theme-btn" 
+            onClick={toggleTheme} 
+            aria-label="Toggle Theme"
+            style={{
+              background: "var(--s2)",
+              border: "1px solid var(--bdr2)",
+              borderRadius: "50%",
+              width: "36px",
+              height: "36px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--txt2)",
+              transition: "all 0.2s",
+              flexShrink: 0
+            }}
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
         </div>
       </header>
 
