@@ -3,7 +3,7 @@ import { fmtTH } from "../../utils/helpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { syncDraws, postLotteryResult, deleteLotteryResult } from "../../services/api";
 import { useLottery } from "../../context/LotteryContext";
-import { Plus, RefreshCw, Loader2, Save, Ruler, ClipboardList, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Save, Ruler, ClipboardList, ChevronLeft, ChevronRight, Search, Trash2, CheckCircle, AlertCircle, Info } from "lucide-react";
 
 const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1));
 const MONTHS = [
@@ -20,7 +20,9 @@ const MONTHS = [
   { value: "11", label: "พฤศจิกายน" },
   { value: "12", label: "ธันวาคม" }
 ];
-const YEARS_BE = Array.from({ length: 21 }, (_, i) => String(2575 - i));
+const currentYearCE = new Date().getFullYear();
+const currentYearBE = currentYearCE + 543;
+const YEARS_BE = Array.from({ length: 15 }, (_, i) => String(currentYearBE - i));
 
 /**
  * Tab: HistTab — เพิ่มผลหวยงวดใหม่ + แสดงตาราง history ทั้งหมด
@@ -84,6 +86,22 @@ export default function HistTab({ history }) {
   const [month, setMonth] = useState("");
   const [yearBE, setYearBE] = useState("");
 
+  // Toast Notification state
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+  };
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, show: false }));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
   const newDate = useMemo(() => {
     if (!day || !month || !yearBE) return "";
     const yearCE = parseInt(yearBE) - 543;
@@ -107,10 +125,10 @@ export default function HistTab({ history }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["draws", "thai"] });
       queryClient.invalidateQueries({ queryKey: ["stats", "summary", "thai"] });
-      alert("ดึงข้อมูลล่าสุดเรียบร้อยแล้ว!");
+      showToast("ดึงข้อมูลล่าสุดเรียบร้อยแล้ว!", "success");
     },
     onError: (err) => {
-      alert("ดึงข้อมูลล้มเหลว: " + (err.response?.data?.details || err.message));
+      showToast("ดึงข้อมูลล้มเหลว: " + (err.response?.data?.details || err.message), "error");
     }
   });
 
@@ -125,10 +143,10 @@ export default function HistTab({ history }) {
       setYearBE("");
       setNewFirst("");
       setNewBack2("");
-      alert("บันทึกผลรางวัลเรียบร้อยแล้ว!");
+      showToast("บันทึกผลรางวัลเรียบร้อยแล้ว!", "success");
     },
     onError: (err) => {
-      alert("เกิดข้อผิดพลาดในการบันทึก: " + (err.response?.data?.details || err.message));
+      showToast("เกิดข้อผิดพลาดในการบันทึก: " + (err.response?.data?.details || err.message), "error");
     }
   });
 
@@ -138,10 +156,10 @@ export default function HistTab({ history }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["draws", lotteryType] });
       queryClient.invalidateQueries({ queryKey: ["stats", "summary", lotteryType] });
-      alert("ลบข้อมูลผลรางวัลเรียบร้อยแล้ว!");
+      showToast("ลบข้อมูลผลรางวัลเรียบร้อยแล้ว!", "success");
     },
     onError: (err) => {
-      alert("เกิดข้อผิดพลาดในการลบ: " + (err.response?.data?.details || err.message));
+      showToast("เกิดข้อผิดพลาดในการลบ: " + (err.response?.data?.details || err.message), "error");
     }
   });
 
@@ -161,7 +179,7 @@ export default function HistTab({ history }) {
 
     if (lotteryType === "lao") {
       if (newFirst.length !== 6) {
-        alert("กรุณากรอกผลรางวัลให้ครบ 6 หลัก");
+        showToast("กรุณากรอกผลรางวัลให้ครบ 6 หลัก", "error");
         return;
       }
       addMutation.mutate({
@@ -171,7 +189,7 @@ export default function HistTab({ history }) {
       });
     } else {
       // Thai manual insert (fallback alert)
-      alert("ขออภัย: ในระบบสลากกินแบ่งรัฐบาลกรุณาใช้ระบบ Sync อัตโนมัติเท่านั้น เพื่อความถูกต้องของฐานข้อมูล");
+      showToast("ขออภัย: ในระบบสลากกินแบ่งรัฐบาลกรุณาใช้ระบบ Sync อัตโนมัติเท่านั้น เพื่อความถูกต้องของฐานข้อมูล", "info");
     }
   }
 
@@ -528,6 +546,18 @@ export default function HistTab({ history }) {
           </div>
         )}
       </div>
+
+      {/* Toast Notification overlay */}
+      {toast.show && (
+        <div className="toast-container">
+          <div className={`toast ${toast.type}`}>
+            {toast.type === "success" && <CheckCircle size={16} style={{ color: "var(--green)" }} />}
+            {toast.type === "error" && <AlertCircle size={16} style={{ color: "var(--red)" }} />}
+            {toast.type === "info" && <Info size={16} style={{ color: "var(--blue)" }} />}
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
