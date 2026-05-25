@@ -6,7 +6,7 @@
 
 ## 📅 สิ่งที่ดำเนินการไปแล้ว (Work Done)
 
-เราได้สร้างระบบวิเคราะห์หวยไทยแบบ Full-stack ที่มีความสามารถระดับ Enterprise โดยแบ่งสิ่งที่ทำไปแล้วเป็นส่วนๆ ดังนี้:
+เราได้สร้างระบบวิเคราะห์หวยแบบ Full-stack ที่มีความสามารถระดับ Enterprise โดยแบ่งสิ่งที่ทำสำเร็จแล้วเป็นส่วนๆ ดังนี้:
 
 ### 1. Backend Hardening & Analytics Engine (Go)
 - **Hybrid Database Architecture:** ใช้ PostgreSQL สำหรับเก็บข้อมูลหลัก และ ClickHouse สำหรับการคำนวณสถิติ Big Data (Z-score, Frequency, Positional Analysis)
@@ -16,6 +16,7 @@
     - ติดตั้ง **Rate Limiter** ป้องกันการเรียกใช้งาน AI API หนักเกินไป
     - ปรับปรุงระบบ **Health Check** ให้ตรวจสอบสถานะ DB และ Redis ได้แบบเรียลไทม์
 - **Caching Layer:** ติดตั้ง Redis เพื่อลดภาระการคำนวณสถิติซ้ำๆ
+- **Markov Chain Engine:** พัฒนาการวิเคราะห์และการเปลี่ยนสถานะแบบ Markov Chain บน ClickHouse ในฝั่ง Backend เรียบร้อย 100%
 
 ### 2. Frontend Modernization (React)
 - **Performance Optimization:** 
@@ -25,13 +26,19 @@
     - เปลี่ยนระบบ Layout เป็น **Mobile-First Responsive Grid** (รองรับทุกหน้าจอ)
     - นำระบบ **Skeleton Loading (Shimmer Effect)** มาใช้แทน Spinner แบบเดิม เพื่อลด Layout Shift (CLS)
     - เพิ่มระบบ Tab Navigation ที่รองรับการเลื่อน (Scroll) บนมือถือ
+- **Theme Customization:** ติดตั้งระบบ **Light/Dark Mode Toggle** สมบูรณ์แบบด้วย `ThemeContext` และ `localStorage` เพื่อคงค่าธีมตามผู้ใช้งานเลือก
 - **AI Integration:** เชื่อมต่อกับ Gemini 1.5 Pro โดยส่งข้อมูลสถิติจาก ClickHouse ไปเป็น Context เพื่อการทำนายที่แม่นยำขึ้น
+
+### 3. Multi-Lottery Integration (Lao Lottery Support)
+- **Hybrid Data Support:** เพิ่มตาราง `LaoLotteryResult` และระบบวิเคราะห์ผลหวยลาวพัฒนา
+- **Stateless Lao Engine:** พัฒนา `lao_handler.go` และ `lao_service.go` แยกออกจากกันอย่างเป็นระบบ
+- **Dynamic Context Switcher:** สร้าง `LotterySwitcher.jsx` ในหน้าเว็บเพื่อสลับแสดงข้อมูลสถิติและการทำนายของ AI ระหว่างหวยไทยและหวยลาวได้อย่างลื่นไหล
 
 ---
 
 ## 🛠️ สถานะปัจจุบัน (Current Technical State)
-- **Backend Version:** `1.1.0-hardened`
-- **Frontend:** พร้อมใช้งานแบบ Responsive พร้อมระบบจัดการ Cache ที่ดีขึ้น
+- **Backend Version:** `1.2.0-hardened`
+- **Frontend:** รองรับธีม Light/Dark Mode และการวิเคราะห์แบบ Multi-Lottery (ไทย-ลาว)
 - **Infrastructure:** รันบน Docker พร้อมระบบ Sync ข้อมูลอัตโนมัติจาก Sanook
 
 ---
@@ -42,12 +49,10 @@
 
 ### 1. AI & Data Science (Deepening)
 - [ ] **AI Model Fine-tuning:** ปรับปรุง Prompt ใน `gemini.js` ให้ใช้เทคนิค Chain-of-Thought เพื่อวิเคราะห์เลขจากสถิติที่ Backend ส่งไปให้ลึกซึ้งขึ้น
-- [ ] **Markov Chain Implementation:** พัฒนาส่วน Markov Chain ใน Go Backend ให้สมบูรณ์ (ปัจจุบันบางส่วนยังเป็น Hybrid/Client-side)
 - [ ] **Backtesting Engine:** สร้างระบบจำลองการซื้อหวยในอดีต (Backtest) เพื่อวัดประสิทธิภาพของ AI Prediction
 
 ### 2. UI/UX & Visualization (Polishing)
 - [ ] **Advanced Charts:** นำ Recharts หรือ Chart.js มาใช้ในหน้า `Trends` และ `Analytics` เพื่อแสดงกราฟแนวโน้ม Z-score และความถี่แบบ Interactive
-- [ ] **Dark/Light Mode Toggle:** เพิ่มความสามารถในการสลับธีมให้สมบูรณ์ (ปัจจุบันเน้น Dark Mode)
 - [ ] **Progressive Web App (PWA):** ทำให้ระบบสามารถติดตั้งลงบนมือถือได้เหมือนแอปพลิเคชันจริง
 
 ### 3. Production & DevOps (Hardening)
