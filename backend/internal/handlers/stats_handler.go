@@ -72,3 +72,26 @@ func (h *StatsHandler) GetPositional(c *fiber.Ctx) error {
 		"data":       stats,
 	})
 }
+
+// GetZScores returns digit-level Z-Scores
+func (h *StatsHandler) GetZScores(c *fiber.Ctx) error {
+	prizeType := c.Query("prize_type", "back2")
+
+	if !isValidPrizeType(prizeType) {
+		return c.JSON(fiber.Map{
+			"prize_type": prizeType,
+			"data":       []interface{}{},
+		})
+	}
+
+	stats, err := h.analyticsService.GetZScoresStats(c.Context(), prizeType)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"prize_type": prizeType,
+		"data":       stats,
+	})
+}
+

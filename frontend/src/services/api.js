@@ -33,6 +33,14 @@ export const fetchPositionalStats = async (prizeType = 'back2') => {
   return response.data;
 };
 
+/** Fetch Z-score statistics for a specific prize type */
+export const fetchZScoresStats = async (prizeType = 'back2') => {
+  const response = await api.get('/stats/zscores', {
+    params: { prize_type: prizeType },
+  });
+  return response.data;
+};
+
 /** Sync latest Thai draws from source */
 export const syncDraws = async () => {
   const response = await api.post('/draws/sync');

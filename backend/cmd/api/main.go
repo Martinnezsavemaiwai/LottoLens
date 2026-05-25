@@ -107,6 +107,7 @@ func main() {
 	// Stats Group (Explicit registration)
 	api.Get("/stats/frequency", statsHandler.GetFrequency)
 	api.Get("/stats/positional", statsHandler.GetPositional)
+	api.Get("/stats/zscores", statsHandler.GetZScores)
 
 	// AI Context with Rate Limiter (Hardening Phase)
 	api.Get("/ai/context", limiter.New(limiter.Config{
