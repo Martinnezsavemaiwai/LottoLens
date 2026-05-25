@@ -16,6 +16,7 @@ frontend/dist/
 .vite/
 .eslintcache
 .env
+*.env
 frontend/.env
 frontend/.env.local
 npm-debug.log*
@@ -34,6 +35,8 @@ vendor/
 *.exe
 *.test
 *.prof
+*.pem
+*.key
 
 # ──────────────────────────────────────────
 # Database & Tools (Prisma / ClickHouse / Redis)
@@ -51,6 +54,7 @@ redis_data/
 # ──────────────────────────────────────────
 .docker/
 docker-compose.override.yml
+.antigravity/
 
 # ──────────────────────────────────────────
 # Documentation & Archive (Optional to ignore)

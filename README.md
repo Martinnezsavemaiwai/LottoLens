@@ -114,7 +114,7 @@ graph TD
 2. เข้าไปที่โฟลเดอร์ `frontend/` และตั้งค่า `.env`:
    ```bash
    cp .env.example .env
-   # ใส่ API Key ใน VITE_GEMINI_API_KEY
+   # Frontend only needs VITE_API_URL. Gemini keys stay in backend/.env.
    ```
 3. ติดตั้ง Dependencies และรันแอปพลิเคชัน:
    ```bash
@@ -136,12 +136,14 @@ graph TD
 | `CLICKHOUSE_USER` | ชื่อผู้ใช้ ClickHouse | `default` |
 | `CLICKHOUSE_PASSWORD`| รหัสผ่าน ClickHouse | `lotto_pass` |
 | `REDIS_HOST` | ที่อยู่ของ Redis | `localhost:6379` |
+| `GEMINI_API_KEY` | Server-side Google Gemini API key | empty in example |
+| `JWT_SECRET` | Secret used to sign JWT access tokens | empty in example |
+| `JWT_EXPIRY_HOURS` | JWT lifetime in hours | `24` |
 
 ### **Frontend (`frontend/.env`)**
 | ตัวแปร | คำอธิบาย | ค่าเริ่มต้นตัวอย่าง |
 | :--- | :--- | :--- |
 | `VITE_API_URL` | URL ของ Backend API | `http://localhost:8081/api/v1` |
-| `VITE_GEMINI_API_KEY` | API Key ของ Google Generative AI | `AIzaSyBIwcnlwG9QAdc...` |
 
 ---
 
