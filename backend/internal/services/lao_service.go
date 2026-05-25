@@ -15,6 +15,7 @@ type LaoService interface {
 	GetStats(ctx context.Context) (*repositories.LaoStatsResult, error)
 	InsertResult(ctx context.Context, dateStr, full string, verified bool) (*db.LaoLotteryResultModel, error)
 	SeedBatch(ctx context.Context, entries []LaoSeedEntry) (int, error)
+	DeleteResult(ctx context.Context, id string) error
 }
 
 // LaoSeedEntry represents a single historical Lao draw record for bulk-seeding.
@@ -38,6 +39,16 @@ func NewLaoService(repo repositories.LaoRepository, cache CacheService) LaoServi
 func (s *laoService) GetDraws(ctx context.Context, page, limit int) ([]db.LaoLotteryResultModel, error) {
 	skip := (page - 1) * limit
 	return s.repo.FindAll(ctx, skip, limit)
+}
+
+func (s *laoService) DeleteResult(ctx context.Context, id string) error {
+	err := s.repo.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+	// Invalidate cache
+	_ = s.cache.DeleteByPrefix(ctx, "stats:lao:")
+	return nil
 }
 
 func (s *laoService) GetStats(ctx context.Context) (*repositories.LaoStatsResult, error) {

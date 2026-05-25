@@ -1,9 +1,26 @@
 import { useState, useMemo, useEffect } from "react";
 import { fmtTH } from "../../utils/helpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { syncDraws, postLotteryResult } from "../../services/api";
+import { syncDraws, postLotteryResult, deleteLotteryResult } from "../../services/api";
 import { useLottery } from "../../context/LotteryContext";
-import { Plus, RefreshCw, Loader2, Save, Ruler, ClipboardList, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Save, Ruler, ClipboardList, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+
+const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1));
+const MONTHS = [
+  { value: "1", label: "มกราคม" },
+  { value: "2", label: "กุมภาพันธ์" },
+  { value: "3", label: "มีนาคม" },
+  { value: "4", label: "เมษายน" },
+  { value: "5", label: "พฤษภาคม" },
+  { value: "6", label: "มิถุนายน" },
+  { value: "7", label: "กรกฎาคม" },
+  { value: "8", label: "สิงหาคม" },
+  { value: "9", label: "กันยายน" },
+  { value: "10", label: "ตุลาคม" },
+  { value: "11", label: "พฤศจิกายน" },
+  { value: "12", label: "ธันวาคม" }
+];
+const YEARS_BE = Array.from({ length: 21 }, (_, i) => String(2575 - i));
 
 /**
  * Tab: HistTab — เพิ่มผลหวยงวดใหม่ + แสดงตาราง history ทั้งหมด
@@ -62,7 +79,19 @@ export default function HistTab({ history }) {
     return filteredHistory.slice(start, start + itemsPerPage);
   }, [filteredHistory, currentPage, itemsPerPage]);
 
-  const [newDate, setNewDate]   = useState("");
+  // Date selection split states (Buddhist Era)
+  const [day, setDay] = useState("");
+  const [month, setMonth] = useState("");
+  const [yearBE, setYearBE] = useState("");
+
+  const newDate = useMemo(() => {
+    if (!day || !month || !yearBE) return "";
+    const yearCE = parseInt(yearBE) - 543;
+    const formattedDay = day.padStart(2, "0");
+    const formattedMonth = month.padStart(2, "0");
+    return `${yearCE}-${formattedMonth}-${formattedDay}`;
+  }, [day, month, yearBE]);
+
   const [newFirst, setNewFirst] = useState(""); // Lao: 6-digit draw number, Thai: First prize
 
   // Thai sub-fields (kept for Thai form backward compatibility)
@@ -91,13 +120,28 @@ export default function HistTab({ history }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["draws", lotteryType] });
       queryClient.invalidateQueries({ queryKey: ["stats", "summary", lotteryType] });
-      setNewDate("");
+      setDay("");
+      setMonth("");
+      setYearBE("");
       setNewFirst("");
       setNewBack2("");
       alert("บันทึกผลรางวัลเรียบร้อยแล้ว!");
     },
     onError: (err) => {
       alert("เกิดข้อผิดพลาดในการบันทึก: " + (err.response?.data?.details || err.message));
+    }
+  });
+
+  // Delete Mutation for Lao/Custom entries
+  const deleteMutation = useMutation({
+    mutationFn: deleteLotteryResult,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["draws", lotteryType] });
+      queryClient.invalidateQueries({ queryKey: ["stats", "summary", lotteryType] });
+      alert("ลบข้อมูลผลรางวัลเรียบร้อยแล้ว!");
+    },
+    onError: (err) => {
+      alert("เกิดข้อผิดพลาดในการลบ: " + (err.response?.data?.details || err.message));
     }
   });
 
@@ -123,7 +167,7 @@ export default function HistTab({ history }) {
       addMutation.mutate({
         date: newDate,
         full: newFirst,
-        verified: true
+        verified: false // User entered draws are marked as custom (unverified) so they can be deleted
       });
     } else {
       // Thai manual insert (fallback alert)
@@ -170,8 +214,21 @@ export default function HistTab({ history }) {
           <div>
             <div className="grid-res grid-cols-1 md:grid-cols-2" style={{marginBottom:12}}>
               <div>
-                <label className="lbl">วันที่ออกรางวัล (ค.ศ.)</label>
-                <input type="date" className="inp" value={newDate} onChange={e=>setNewDate(e.target.value)}/>
+                <label className="lbl">วันที่ออกรางวัล (พ.ศ.)</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <select className="inp" value={day} onChange={e=>setDay(e.target.value)} style={{ flex: 1 }}>
+                    <option value="">วัน</option>
+                    {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select className="inp" value={month} onChange={e=>setMonth(e.target.value)} style={{ flex: 2 }}>
+                    <option value="">เดือน</option>
+                    {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                  <select className="inp" value={yearBE} onChange={e=>setYearBE(e.target.value)} style={{ flex: 1.5 }}>
+                    <option value="">ปี พ.ศ.</option>
+                    {YEARS_BE.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="lbl">ผลรางวัลเลข 6 หลัก</label>
@@ -236,8 +293,21 @@ export default function HistTab({ history }) {
           <div>
             <div className="grid-res grid-cols-1 md:grid-cols-2" style={{marginBottom:12}}>
               <div>
-                <label className="lbl">วันที่ออกรางวัล (ค.ศ.)</label>
-                <input type="date" className="inp" value={newDate} onChange={e=>setNewDate(e.target.value)}/>
+                <label className="lbl">วันที่ออกรางวัล (พ.ศ.)</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <select className="inp" value={day} onChange={e=>setDay(e.target.value)} style={{ flex: 1 }}>
+                    <option value="">วัน</option>
+                    {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select className="inp" value={month} onChange={e=>setMonth(e.target.value)} style={{ flex: 2 }}>
+                    <option value="">เดือน</option>
+                    {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                  <select className="inp" value={yearBE} onChange={e=>setYearBE(e.target.value)} style={{ flex: 1.5 }}>
+                    <option value="">ปี พ.ศ.</option>
+                    {YEARS_BE.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="lbl">รางวัลที่ 1 (6 หลัก)</label>
@@ -319,6 +389,7 @@ export default function HistTab({ history }) {
                     <th>3 ตัวบน</th>
                     <th>2 ตัวบน</th>
                     <th>สถานะ</th>
+                    <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -344,11 +415,38 @@ export default function HistTab({ history }) {
                             </>
                           )}
                         </td>
+                        <td>
+                          {!row.verified ? (
+                            <button 
+                              className="btn btn-r" 
+                              style={{
+                                padding: "4px 8px", 
+                                fontSize: "11px", 
+                                height: "auto", 
+                                minHeight: "unset",
+                                display: "inline-flex", 
+                                alignItems: "center", 
+                                gap: "4px"
+                              }}
+                              onClick={() => {
+                                if (window.confirm(`คุณต้องการลบงวดวันที่ ${fmtTH(row.dateTH || row.date)} ใช่หรือไม่?`)) {
+                                  deleteMutation.mutate(row.id);
+                                }
+                              }}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 size={12} />
+                              <span>ลบ</span>
+                            </button>
+                          ) : (
+                            <span style={{color:"var(--txt3)", fontSize:10}}>ระบบอ้างอิง</span>
+                          )}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: "center", padding: 30, color: "var(--txt3)" }}>
+                      <td colSpan={8} style={{ textAlign: "center", padding: 30, color: "var(--txt3)" }}>
                         ไม่พบข้อมูลตามคำค้นหา
                       </td>
                     </tr>
