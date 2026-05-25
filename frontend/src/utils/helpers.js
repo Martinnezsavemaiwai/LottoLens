@@ -15,20 +15,66 @@ export function fmtTH(d) {
 }
 
 /**
- * คำนวณงวดถัดไป
+ * คำนวณงวดถัดไปของหวยไทย
  */
 export function getNextDraw() {
   const now = new Date();
-  const thYear = now.getFullYear() + 543;
-  const m = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
   const day = now.getDate();
+  const hours = now.getHours();
   
-  if (day <= 1) return `1 ${MONTHS_TH[m]} ${thYear}`;
-  if (day <= 16) return `16 ${MONTHS_TH[m]} ${thYear}`;
+  // Custom draw dates for Thai lottery
+  const getDrawsForMonth = (m) => {
+    if (m === 1) return [17]; // Jan 1 moved to Dec 30, Jan 16 moved to Jan 17
+    if (m === 5) return [2, 16]; // May 1 moved to May 2
+    if (m === 12) return [1, 16, 30]; // Next Jan 1 moved to Dec 30
+    return [1, 16];
+  };
+
+  const currentMonthDraws = getDrawsForMonth(month);
   
-  const nm = m === 12 ? 1 : m + 1;
-  const ny = m === 12 ? thYear + 1 : thYear;
-  return `1 ${MONTHS_TH[nm]} ${ny}`;
+  for (let drawDay of currentMonthDraws) {
+    // If today is before the draw date, or it's the draw date but before 16:00
+    if (day < drawDay || (day === drawDay && hours < 16)) {
+      return `${drawDay} ${MONTHS_TH[month]} ${year + 543}`;
+    }
+  }
+
+  // If all draws in current month have passed
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonthDraws = getDrawsForMonth(nextMonth);
+  
+  return `${nextMonthDraws[0]} ${MONTHS_TH[nextMonth]} ${nextYear + 543}`;
+}
+
+/**
+ * คำนวณงวดถัดไปของหวยลาวพัฒนา (ออกทุกวันจันทร์ - ศุกร์ เวลา 20.00 น.)
+ */
+export function getNextLaoDraw() {
+  const now = new Date();
+  let target = new Date(now);
+  
+  for (let i = 0; i < 7; i++) {
+    const dayOfWeek = target.getDay();
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      if (i === 0) {
+        const hours = now.getHours();
+        if (hours >= 20) {
+          target.setDate(target.getDate() + 1);
+          continue;
+        }
+      }
+      break;
+    }
+    target.setDate(target.getDate() + 1);
+  }
+  
+  const thYear = target.getFullYear() + 543;
+  const m = target.getMonth() + 1;
+  const d = target.getDate();
+  return `${d} ${MONTHS_TH[m]} ${thYear}`;
 }
 
 /**
@@ -61,6 +107,28 @@ export function mapBackendDraw(d) {
     year: parseInt(y) + 543,
     month: parseInt(m),
     drawDay: d.drawDay
+  };
+}
+
+/**
+ * Map Backend LaoLotteryResult model to Frontend format
+ */
+export function mapBackendLaoDraw(d) {
+  if (!d) return null;
+  const iso = d.drawDate?.split('T')[0] || '';
+  const [y, m, day] = iso.split('-');
+  return {
+    id: d.id,
+    dateISO: iso,
+    dateTH: `${parseInt(y)+543}-${m}-${day}`,
+    full: d.tail4 ? "00" + d.tail4 : "000000", // Lao seed is stored as full 6 digit in reference, we construct if needed, or if it doesn't matter we just use tail4
+    tail4: d.tail4,
+    top3: d.top3,
+    top2: d.top2,
+    bottom2: d.bottom2,
+    year: parseInt(y) + 543,
+    month: parseInt(m),
+    verified: d.isVerified
   };
 }
 

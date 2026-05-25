@@ -1,36 +1,46 @@
 package services
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"lotto-backend/prisma/db"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 )
 
-type RayriffyResponse struct {
-	Status   string `json:"status"`
-	Response struct {
-		Date     string `json:"date"`
-		Endpoint string `json:"endpoint"`
-		Prizes   []struct {
-			ID     string      `json:"id"`
-			Name   string      `json:"name"`
-			Reward string      `json:"reward"`
-			Amount int         `json:"amount"`
-			Number interface{} `json:"number"`
-		} `json:"prizes"`
-		RunningNumbers []struct {
-			ID     string      `json:"id"`
-			Name   string      `json:"name"`
-			Reward string      `json:"reward"`
-			Amount int         `json:"amount"`
-			Number interface{} `json:"number"`
-		} `json:"runningNumbers"`
+type GloResponse struct {
+	Status        interface{} `json:"status"` // Decode status dynamically (bool or string)
+	StatusCode    interface{} `json:"statusCode"`
+	StatusMessage string      `json:"statusMessage"`
+	Response      *struct {
+		Result *struct {
+			Date    string `json:"date"`
+			PdfURL  string `json:"pdf_url"`
+			Data    struct {
+				First  GloPrize `json:"first"`
+				Second GloPrize `json:"second"`
+				Third  GloPrize `json:"third"`
+				Fourth GloPrize `json:"fourth"`
+				Fifth  GloPrize `json:"fifth"`
+				Last2  GloPrize `json:"last2"`
+				Last3f GloPrize `json:"last3f"`
+				Last3b GloPrize `json:"last3b"`
+				Near1  GloPrize `json:"near1"`
+			} `json:"data"`
+		} `json:"result"`
 	} `json:"response"`
+}
+
+type GloPrize struct {
+	Price  string `json:"price"`
+	Number []struct {
+		Round interface{} `json:"round"` // Can be int or string
+		Value string      `json:"value"`
+	} `json:"number"`
 }
 
 type ScraperService interface {
@@ -45,77 +55,103 @@ func NewScraperService() ScraperService {
 }
 
 func (s *scraperService) FetchLatest() (*db.LottoDrawModel, error) {
-	return s.fetchDraw("https://lotto.api.rayriffy.com/latest")
+	// Try candidate dates going backwards from Bangkok time
+	loc, err := time.LoadLocation("Asia/Bangkok")
+	var now time.Time
+	if err != nil {
+		// Fallback to UTC+7 offset if zoneinfo is not packed in container
+		now = time.Now().UTC().Add(7 * time.Hour)
+	} else {
+		now = time.Now().In(loc)
+	}
+
+	candidates := getCandidateDrawDates(now)
+	for _, c := range candidates {
+		day := fmt.Sprintf("%02d", c.Day())
+		month := fmt.Sprintf("%02d", int(c.Month()))
+		year := fmt.Sprintf("%04d", c.Year())
+
+		draw, err := s.fetchFromGlo(day, month, year)
+		if err == nil && draw != nil && draw.FirstPrize != "" && draw.FirstPrize != "xxxxxx" {
+			log.Printf("🎉 Successfully fetched latest draw from GLO API for date: %s", draw.DrawDate.Format("2006-01-02"))
+			return draw, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to fetch latest draw results from GLO API after trying several candidate dates")
 }
 
 func (s *scraperService) FetchByID(id string) (*db.LottoDrawModel, error) {
-	return s.fetchDraw("https://lotto.api.rayriffy.com/lotto/" + id)
+	// Old Rayriffy ID format was ddmmyyyy (e.g. "16052026")
+	if len(id) < 8 {
+		return nil, fmt.Errorf("invalid draw ID format: %s", id)
+	}
+	day := id[0:2]
+	month := id[2:4]
+	year := id[4:8]
+
+	// Check if BE year is supplied (e.g., > 2400) and convert to AD if so
+	yInt, err := strconv.Atoi(year)
+	if err == nil && yInt > 2400 {
+		year = fmt.Sprintf("%04d", yInt-543)
+	}
+
+	return s.fetchFromGlo(day, month, year)
 }
 
-func (s *scraperService) fetchDraw(targetURL string) (*db.LottoDrawModel, error) {
+func (s *scraperService) fetchFromGlo(day, month, year string) (*db.LottoDrawModel, error) {
+	url := "https://www.glo.or.th/api/checking/getLotteryResult"
+
+	reqBody, err := json.Marshal(map[string]string{
+		"date":  day,
+		"month": month,
+		"year":  year,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(targetURL)
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Rayriffy API returned status %d", resp.StatusCode)
+		return nil, fmt.Errorf("GLO API returned HTTP status %d", resp.StatusCode)
 	}
 
-	body, _ := io.ReadAll(resp.Body)
-	var rayResp RayriffyResponse
-	if err := json.Unmarshal(body, &rayResp); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	data := rayResp.Response
-
-	// Parse date from endpoint (ddmmyyyy)
-	endpoint := data.Endpoint
-	parts := strings.Split(endpoint, "/")
-	datePart := parts[len(parts)-1]
-	
-	var drawDate time.Time
-	if len(datePart) >= 8 {
-		day, _ := strconv.Atoi(datePart[0:2])
-		month, _ := strconv.Atoi(datePart[2:4])
-		year, _ := strconv.Atoi(datePart[4:8])
-		drawDate = time.Date(year-543, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	} else {
-		return nil, fmt.Errorf("could not parse valid date from API endpoint: %s", endpoint)
+	var gloResp GloResponse
+	if err := json.Unmarshal(body, &gloResp); err != nil {
+		return nil, err
 	}
 
-	// Map Prizes
-	prizeMap := make(map[string][]string)
-	for _, p := range data.Prizes {
-		prizeMap[p.ID] = parseNumbers(p.Number)
-	}
-	for _, r := range data.RunningNumbers {
-		prizeMap[r.ID] = parseNumbers(r.Number)
+	if gloResp.Response == nil || gloResp.Response.Result == nil || gloResp.Response.Result.Date == "" {
+		return nil, fmt.Errorf("no lottery draw data found for date %s-%s-%s", year, month, day)
 	}
 
-	// Helper to get prize JSON or empty array
-	getPrizeJSON := func(id string) []byte {
-		nums := prizeMap[id]
-		if nums == nil {
-			nums = []string{}
-		}
-		b, _ := json.Marshal(nums)
-		return b
-	}
+	result := gloResp.Response.Result
 
-	back2 := ""
-	if nums := prizeMap["runningNumberBackTwo"]; len(nums) > 0 {
-		back2 = nums[0]
-	} else if nums := prizeMap["back2"]; len(nums) > 0 {
-		back2 = nums[0]
+	// Map to LottoDrawModel
+	drawDate, err := time.Parse("2006-01-02", result.Date)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse draw date %s: %v", result.Date, err)
 	}
 
 	firstPrize := ""
-	if nums := prizeMap["prizeFirst"]; len(nums) > 0 {
-		firstPrize = nums[0]
+	if len(result.Data.First.Number) > 0 {
+		firstPrize = result.Data.First.Number[0].Value
+	}
+
+	back2 := ""
+	if len(result.Data.Last2.Number) > 0 {
+		back2 = result.Data.Last2.Number[0].Value
 	}
 
 	return &db.LottoDrawModel{
@@ -125,28 +161,71 @@ func (s *scraperService) fetchDraw(targetURL string) (*db.LottoDrawModel, error)
 			Month:        int(drawDate.Month()),
 			Year:         drawDate.Year(),
 			FirstPrize:   firstPrize,
-			NearbyPrizes: getPrizeJSON("prizeFirstNear"),
-			SecondPrizes: getPrizeJSON("prizeSecond"),
-			ThirdPrizes:  getPrizeJSON("prizeThird"),
-			FourthPrizes: getPrizeJSON("prizeFourth"),
-			FifthPrizes:  getPrizeJSON("prizeFifth"),
-			Front3:       getPrizeJSON("runningNumberFrontThree"),
-			Back3:        getPrizeJSON("runningNumberBackThree"),
+			NearbyPrizes: mapGloPrizeToJSON(result.Data.Near1),
+			SecondPrizes: mapGloPrizeToJSON(result.Data.Second),
+			ThirdPrizes:  mapGloPrizeToJSON(result.Data.Third),
+			FourthPrizes: mapGloPrizeToJSON(result.Data.Fourth),
+			FifthPrizes:  mapGloPrizeToJSON(result.Data.Fifth),
+			Front3:       mapGloPrizeToJSON(result.Data.Last3f),
+			Back3:        mapGloPrizeToJSON(result.Data.Last3b),
 			Back2:        back2,
 		},
 	}, nil
 }
 
-func parseNumbers(val interface{}) []string {
-	if s, ok := val.(string); ok {
-		return strings.Fields(s)
-	}
-	if arr, ok := val.([]interface{}); ok {
-		res := make([]string, len(arr))
-		for i, v := range arr {
-			res[i] = fmt.Sprint(v)
+func mapGloPrizeToJSON(gp GloPrize) []byte {
+	nums := []string{}
+	for _, n := range gp.Number {
+		if n.Value != "" {
+			nums = append(nums, n.Value)
 		}
-		return res
 	}
-	return []string{}
+	b, _ := json.Marshal(nums)
+	return b
+}
+
+func getCandidateDrawDates(t time.Time) []time.Time {
+	candidates := []time.Time{}
+	y, m, d := t.Date()
+
+	currYear := y
+	currMonth := m
+
+	// Generate candidates for the current month and the last 2 months (total 6 draws)
+	for i := 0; i < 3; i++ {
+		targetYear := currYear
+		targetMonth := currMonth - time.Month(i)
+		if targetMonth <= 0 {
+			targetMonth += 12
+			targetYear -= 1
+		}
+
+		if i == 0 {
+			if d >= 16 {
+				candidates = append(candidates, time.Date(targetYear, targetMonth, 16, 0, 0, 0, 0, time.UTC))
+				candidates = append(candidates, time.Date(targetYear, targetMonth, 1, 0, 0, 0, 0, time.UTC))
+			} else {
+				candidates = append(candidates, time.Date(targetYear, targetMonth, 1, 0, 0, 0, 0, time.UTC))
+			}
+		} else {
+			candidates = append(candidates, time.Date(targetYear, targetMonth, 16, 0, 0, 0, 0, time.UTC))
+			candidates = append(candidates, time.Date(targetYear, targetMonth, 1, 0, 0, 0, 0, time.UTC))
+		}
+	}
+
+	// Add special shifted dates (May 1 -> May 2, Jan 1 -> Dec 30/Jan 2)
+	adjustedCandidates := []time.Time{}
+	for _, c := range candidates {
+		cy, cm, cd := c.Date()
+		if cm == time.May && cd == 1 {
+			adjustedCandidates = append(adjustedCandidates, time.Date(cy, cm, 2, 0, 0, 0, 0, time.UTC))
+		}
+		if cm == time.January && cd == 1 {
+			adjustedCandidates = append(adjustedCandidates, time.Date(cy, cm, 2, 0, 0, 0, 0, time.UTC))
+			adjustedCandidates = append(adjustedCandidates, time.Date(cy-1, time.December, 30, 0, 0, 0, 0, time.UTC))
+		}
+		adjustedCandidates = append(adjustedCandidates, c)
+	}
+
+	return adjustedCandidates
 }
