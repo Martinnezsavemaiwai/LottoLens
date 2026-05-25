@@ -51,6 +51,7 @@ type LaoRepository interface {
 	Upsert(ctx context.Context, d *db.LaoLotteryResultModel) (*db.LaoLotteryResultModel, error)
 	Count(ctx context.Context) (int, error)
 	GetStats(ctx context.Context) (*LaoStatsResult, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // ── Implementation ────────────────────────────────────────────────────────────
@@ -106,6 +107,13 @@ func (r *laoRepository) Count(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return len(results), nil
+}
+
+func (r *laoRepository) Delete(ctx context.Context, id string) error {
+	_, err := r.client.LaoLotteryResult.FindUnique(
+		db.LaoLotteryResult.ID.Equals(id),
+	).Delete().Exec(ctx)
+	return err
 }
 
 // GetStats computes all analytics in Go — no ClickHouse dependency for Lao data.

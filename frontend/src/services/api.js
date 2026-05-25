@@ -95,5 +95,14 @@ export const postLotteryResult = async (type, payload) => {
   return response.data;
 };
 
+/**
+ * Delete a lottery result by database ID.
+ * @param {string} id
+ */
+export const deleteLotteryResult = async (id) => {
+  const response = await apiV2.delete(`/lottery/result/${id}`);
+  return response.data;
+};
+
 export default api;
 

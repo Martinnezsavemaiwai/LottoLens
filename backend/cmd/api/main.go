@@ -102,6 +102,7 @@ func main() {
 	lottery.Get("/history", laoHandler.GetHistory)
 	lottery.Get("/stats",   laoHandler.GetStats)
 	lottery.Post("/result", laoHandler.PostResult)
+	lottery.Delete("/result/:id", laoHandler.DeleteResult)
 
 	// Stats Group (Explicit registration)
 	api.Get("/stats/frequency", statsHandler.GetFrequency)

@@ -114,3 +114,23 @@ func (h *LaoHandler) PostResult(c *fiber.Ctx) error {
 		})
 	}
 }
+
+// DELETE /api/v2/lottery/result/:id
+func (h *LaoHandler) DeleteResult(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "ID parameter is required"})
+	}
+
+	err := h.laoSvc.DeleteResult(c.Context(), id)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error":   "Failed to delete lottery result",
+			"details": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Lottery result deleted successfully",
+	})
+}
