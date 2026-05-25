@@ -77,6 +77,9 @@ services:
       - CLICKHOUSE_PASSWORD=lotto_pass
       - REDIS_HOST=redis:6379
       - PORT=8080
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-dev-only-change-me}
+      - JWT_EXPIRY_HOURS=${JWT_EXPIRY_HOURS:-24}
     depends_on:
       db:
         condition: service_healthy

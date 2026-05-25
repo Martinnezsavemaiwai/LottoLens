@@ -105,3 +105,11 @@ model LaoLotteryResult {
   @@index([top2])
   @@index([bottom2])
 }
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

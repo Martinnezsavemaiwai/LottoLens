@@ -15,6 +15,17 @@ const apiV2 = axios.create({
   },
 });
 
+const attachAuthToken = (config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+};
+
+api.interceptors.request.use(attachAuthToken);
+apiV2.interceptors.request.use(attachAuthToken);
+
 // ── v1 (Thai lottery — existing) ─────────────────────────────────────────────
 
 /** Fetch frequency statistics for a specific prize type */
@@ -65,6 +76,22 @@ export const fetchStatsSummary = async () => {
 export const fetchAIContext = async (prizeType = 'back2') => {
   const response = await api.get('/ai/context', {
     params: { prize_type: prizeType },
+  });
+  return response.data;
+};
+
+/** Ask the backend AI proxy for a Gemini prediction */
+export const fetchAIPrediction = async ({
+  prizeType = 'back2',
+  limit = 4,
+  prompt,
+  systemInstruction,
+} = {}) => {
+  const response = await api.post('/ai/predict', {
+    prize_type: prizeType,
+    limit,
+    prompt,
+    system_instruction: systemInstruction,
   });
   return response.data;
 };

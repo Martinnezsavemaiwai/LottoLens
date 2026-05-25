@@ -20,11 +20,17 @@ func NewLaoHandler(laoSvc services.LaoService, thaiSvc services.LottoService) *L
 // GET /api/v2/lottery/history?type=lao|thai&page=1&limit=20
 func (h *LaoHandler) GetHistory(c *fiber.Ctx) error {
 	lotteryType := c.Query("type", "lao")
-	page, _  := strconv.Atoi(c.Query("page", "1"))
+	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
-	if page < 1  { page = 1 }
-	if limit < 1 { limit = 20 }
-	if limit > 1000 { limit = 1000 }
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
 
 	switch lotteryType {
 	case "thai":
@@ -108,7 +114,7 @@ func (h *LaoHandler) PostResult(c *fiber.Ctx) error {
 				"details": err.Error(),
 			})
 		}
-		return c.Status(201).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Lao draw result saved successfully",
 			"data":    saved,
 		})
