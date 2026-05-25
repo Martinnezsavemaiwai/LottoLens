@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"lotto-backend/internal/handlers"
+	appmiddleware "lotto-backend/internal/middleware"
 	"lotto-backend/internal/repositories"
 	"lotto-backend/internal/services"
 	"lotto-backend/prisma/db"
@@ -56,11 +57,14 @@ func main() {
 
 	// 2. Setup Layers
 	lottoRepo := repositories.NewLottoRepository(client)
+	userRepo := repositories.NewUserRepository(client)
 	scraperService := services.NewScraperService()
 	lottoService := services.NewLottoService(lottoRepo, scraperService, chRepo, cacheService)
+	authService := services.NewAuthService(userRepo)
 	statsService := services.NewStatsService(chRepo, cacheService)
 	lottoHandler := handlers.NewLottoHandler(lottoService)
-	
+	authHandler := handlers.NewAuthHandler(authService)
+
 	analyticsService := services.NewAnalyticsService(chRepo, cacheService)
 	statsHandler := handlers.NewStatsHandler(analyticsService)
 
@@ -68,7 +72,7 @@ func main() {
 	aiHandler := handlers.NewAIHandler(aiService)
 
 	// ── Lao Lottery Layer ──
-	laoRepo    := repositories.NewLaoRepository(client)
+	laoRepo := repositories.NewLaoRepository(client)
 	laoService := services.NewLaoService(laoRepo, cacheService)
 	laoHandler := handlers.NewLaoHandler(laoService, lottoService)
 
@@ -85,24 +89,38 @@ func main() {
 	}))
 	app.Use(logger.New())
 	app.Use(recover.New())
+	app.Use(func(c *fiber.Ctx) error {
+		c.Set("X-Content-Type-Options", "nosniff")
+		c.Set("X-Frame-Options", "DENY")
+		c.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Set("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'")
+		return c.Next()
+	})
 
 	// 4. Routes
 	api := app.Group("/api/v1")
-	
+
+	authRoutes := api.Group("/auth")
+	authRoutes.Post("/register", authHandler.Register)
+	authRoutes.Post("/login", authHandler.Login)
+
+	requireAuth := appmiddleware.AuthMiddleware(authService)
+
 	// Draws Group
 	draws := api.Group("/draws")
 	draws.Get("/", lottoHandler.ListDraws)
 	draws.Get("/:date", lottoHandler.GetByDate)
-	draws.Post("/sync", lottoHandler.Sync)
-	draws.Post("/rebuild-analytics", lottoHandler.RebuildAnalytics)
+	draws.Post("/sync", requireAuth, lottoHandler.Sync)
+	draws.Post("/rebuild-analytics", requireAuth, lottoHandler.RebuildAnalytics)
+	api.Post("/lottery/result", requireAuth, lottoHandler.Sync)
 
 	// ── API v2 — Multi-Lottery Engine ──
 	v2 := app.Group("/api/v2")
 	lottery := v2.Group("/lottery")
 	lottery.Get("/history", laoHandler.GetHistory)
-	lottery.Get("/stats",   laoHandler.GetStats)
-	lottery.Post("/result", laoHandler.PostResult)
-	lottery.Delete("/result/:id", laoHandler.DeleteResult)
+	lottery.Get("/stats", laoHandler.GetStats)
+	lottery.Post("/result", requireAuth, laoHandler.PostResult)
+	lottery.Delete("/result/:id", requireAuth, laoHandler.DeleteResult)
 
 	// Stats Group (Explicit registration)
 	api.Get("/stats/frequency", statsHandler.GetFrequency)
@@ -122,6 +140,31 @@ func main() {
 			})
 		},
 	}), aiHandler.GetContext)
+
+	api.Get("/ai/predict", limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			slog.Warn("Rate limit reached", "ip", c.IP(), "path", c.Path())
+			return c.Status(429).JSON(fiber.Map{
+				"error":   "Too many AI requests",
+				"message": "Limit: 5 requests per 1 minute. Please wait.",
+				"status":  429,
+			})
+		},
+	}), aiHandler.Predict)
+	api.Post("/ai/predict", limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			slog.Warn("Rate limit reached", "ip", c.IP(), "path", c.Path())
+			return c.Status(429).JSON(fiber.Map{
+				"error":   "Too many AI requests",
+				"message": "Limit: 5 requests per 1 minute. Please wait.",
+				"status":  429,
+			})
+		},
+	}), aiHandler.Predict)
 
 	api.Get("/stats/summary", func(c *fiber.Ctx) error {
 		slog.Info("📡 Request reached /stats/summary")
@@ -146,7 +189,7 @@ func main() {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		ctx := c.Context()
 		status := 200
-		
+
 		// 1. Check Postgres (Prisma)
 		pgStatus := "up"
 		if _, err := client.Prisma.ExecuteRaw("SELECT 1").Exec(ctx); err != nil {
