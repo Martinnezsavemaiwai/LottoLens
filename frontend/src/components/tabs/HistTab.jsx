@@ -89,6 +89,9 @@ export default function HistTab({ history }) {
   // Toast Notification state
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
+  // Confirm Delete Modal state
+  const [confirmDelete, setConfirmDelete] = useState({ show: false, id: null, dateStr: "" });
+
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
   };
@@ -447,9 +450,11 @@ export default function HistTab({ history }) {
                                 gap: "4px"
                               }}
                               onClick={() => {
-                                if (window.confirm(`คุณต้องการลบงวดวันที่ ${fmtTH(row.dateTH || row.date)} ใช่หรือไม่?`)) {
-                                  deleteMutation.mutate(row.id);
-                                }
+                                setConfirmDelete({
+                                  show: true,
+                                  id: row.id,
+                                  dateStr: fmtTH(row.dateTH || row.date)
+                                });
                               }}
                               disabled={deleteMutation.isPending}
                             >
@@ -546,6 +551,53 @@ export default function HistTab({ history }) {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmDelete.show && (
+        <div className="modal-backdrop">
+          <div className="modal-content card">
+            <div className="ctitle" style={{ gap: "8px", margin: 0, justifyContent: "flex-start" }}>
+              <AlertCircle size={18} style={{ color: "var(--red)" }} />
+              <span>ยืนยันการลบข้อมูล</span>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--txt2)", margin: "16px 0", lineHeight: 1.6 }}>
+              คุณต้องการลบงวดวันที่ <strong>{confirmDelete.dateStr}</strong> ใช่หรือไม่?<br />
+              <span style={{ fontSize: 11, color: "var(--txt3)" }}>*การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button 
+                className="btn" 
+                style={{ 
+                  background: "var(--s3)", 
+                  color: "var(--txt)", 
+                  padding: "8px 16px", 
+                  fontSize: 12, 
+                  minHeight: 36,
+                  height: "auto"
+                }}
+                onClick={() => setConfirmDelete({ show: false, id: null, dateStr: "" })}
+              >
+                ยกเลิก
+              </button>
+              <button 
+                className="btn btn-r" 
+                style={{ 
+                  padding: "8px 16px", 
+                  fontSize: 12, 
+                  minHeight: 36,
+                  height: "auto"
+                }}
+                onClick={() => {
+                  deleteMutation.mutate(confirmDelete.id);
+                  setConfirmDelete({ show: false, id: null, dateStr: "" });
+                }}
+              >
+                ยืนยันการลบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification overlay */}
       {toast.show && (

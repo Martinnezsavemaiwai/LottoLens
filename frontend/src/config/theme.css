@@ -814,9 +814,15 @@ body::before {
 /* ── Light Mode Specific Component Overrides ── */
 [data-theme="light"] .logo {
   background: linear-gradient(135deg, #854d0e 0%, #b45309 50%, #d97706 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 [data-theme="light"].mode-lao .logo {
   background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 50%, #4c1d95 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 [data-theme="light"] .toast {
@@ -920,6 +926,43 @@ body::before {
 [data-theme="light"] .btn-r:hover {
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   box-shadow: 0 0 12px rgba(185, 28, 28, 0.12);
+}
+
+/* ── Premium Confirmation Modal ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: modal-fade-in 0.25s ease-out forwards;
+}
+[data-theme="light"] .modal-backdrop {
+  background: rgba(15, 23, 42, 0.35);
+}
+.modal-content.card {
+  max-width: 400px;
+  width: 100%;
+  margin-bottom: 0;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  animation: modal-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+[data-theme="light"] .modal-content.card {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-scale-in {
+  from { transform: scale(0.9) translateY(10px); }
+  to { transform: scale(1) translateY(0); }
 }
 
 
