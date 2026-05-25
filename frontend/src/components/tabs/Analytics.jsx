@@ -5,7 +5,12 @@ import { fetchFrequencyStats, fetchPositionalStats, fetchZScoresStats } from "..
 import { useLottery } from "../../context/LotteryContext";
 import Skeleton from "../ui/Skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
-import { BarChart3, Target, Flame, Snowflake, Clock, Award, BookOpen, AlertTriangle, Check, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  BarChart3, Target, Flame, Snowflake, Clock, Award, AlertTriangle, 
+  Check, TrendingUp, ChevronLeft, ChevronRight, 
+  ThermometerSnowflake, ThermometerSun,
+  CalendarDays, Pin, Database, Link2
+} from "lucide-react";
 
 /**
  * Tab: Analytics — สถิติ Positional, Hot/Cold, Pattern งวด 1 vs 16
@@ -249,7 +254,7 @@ export default function Analytics({ stats: localStats, history }) {
           <span>Z-Score Analysis (ค่าเบี่ยงเบนมาตรฐานของตัวเลข 0-9)</span>
           <span className="csub">ค่าบวก = ออกบ่อยกว่าเกณฑ์เฉลี่ย | ค่าลบ = ออกน้อยกว่าเกณฑ์เฉลี่ย</span>
         </div>
-        
+
         {isZScoreLoading && lotteryType === "thai" ? (
           <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Skeleton height={180} width="100%" />
@@ -285,7 +290,17 @@ export default function Analytics({ stats: localStats, history }) {
                               </span>
                             </div>
                             <div style={{ fontSize: 10, color: "var(--txt3)", marginTop: 4 }}>
-                              {isHot ? "🔥 ออกบ่อยกว่าปกติ" : "❄️ ออกน้อยกว่าปกติ"}
+                              {isHot ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <ThermometerSun size={14} />
+                                  <span>ออกบ่อยกว่าปกติ</span>
+                                </div>
+                              ) : (
+                                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <ThermometerSnowflake size={14} />
+                                  <span>ออกน้อยกว่าปกติ</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -303,13 +318,13 @@ export default function Analytics({ stats: localStats, history }) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            
+
             <div className="fchips mt" style={{ fontSize: 10, gap: 10, display: "inline-flex", alignItems: "center" }}>
               <span style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--accent)" }} /> Z-Score > 0 (ออกสูงกว่าปกติ)
+                <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--accent)" }} /> Z-Score &gt; 0 (ออกสูงกว่าปกติ)
               </span>
               <span style={{ color: "var(--blue)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--blue)" }} /> Z-Score < 0 (ออกต่ำกว่าปกติ)
+                <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--blue)" }} /> Z-Score &lt; 0 (ออกต่ำกว่าปกติ)
               </span>
             </div>
           </div>
@@ -426,12 +441,16 @@ export default function Analytics({ stats: localStats, history }) {
       {/* Day Pattern — Only shown in Thai Lottery Mode */}
       {lotteryType === "thai" && stats && (
         <div className="card">
-          <div className="ctitle">📅 Pattern งวดวันที่ 1 vs 16
+          <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <CalendarDays size={14} style={{ color: "var(--accent)" }} />
+            <span>Pattern งวดวันที่ 1 vs 16</span>
             <span className="csub">เลขท้าย 2 ตัวที่ออกบ่อยแยกตามวันออกรางวัล</span>
           </div>
           <div className="grid-res grid-cols-1 lg:grid-cols-2">
             <div>
-              <div style={{ fontSize: 10, color: "var(--accent)", marginBottom: 8, letterSpacing: 1 }}>📌 งวดวันที่ 1</div>
+              <div style={{ fontSize: 10, color: "var(--accent)", marginBottom: 8, letterSpacing: 1, display: "flex", alignItems: "center", gap: "4px" }}>
+                <Pin size={10} /> งวดวันที่ 1
+              </div>
               <div className="chips">
                 {stats.day1Freq ? Object.entries(stats.day1Freq).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n, c], i) => (
                   <span key={n} className={`chip${i < 3 ? " top" : ""}`}>
@@ -441,7 +460,9 @@ export default function Analytics({ stats: localStats, history }) {
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--cyan)", marginBottom: 8, letterSpacing: 1 }}>📌 งวดวันที่ 16</div>
+              <div style={{ fontSize: 10, color: "var(--cyan)", marginBottom: 8, letterSpacing: 1, display: "flex", alignItems: "center", gap: "4px" }}>
+                <Pin size={10} /> งวดวันที่ 16
+              </div>
               <div className="chips">
                 {stats.day16Freq ? Object.entries(stats.day16Freq).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n, c], i) => (
                   <span key={n} className={`chip${i < 3 ? " top" : ""}`} style={i < 3 ? { borderColor: "var(--cyan)" } : {}}>
@@ -563,10 +584,12 @@ export default function Analytics({ stats: localStats, history }) {
       {lotteryType === "thai" && stats && (
         <>
           <div className="card" style={{ opacity: 0.6 }}>
-            <div className="ctitle">📚 สถิติย้อนหลัง (Local Engine)
+            <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <Database size={14} style={{ color: "var(--txt2)" }} />
+              <span>สถิติย้อนหลัง (Local Engine)</span>
               <span className="csub">ข้อมูลจากไฟล์ local {history.length} งวด</span>
             </div>
-            <div className="chips">
+            <div className="chips mt">
               {stats.back2Arr?.slice(0, 10).map((p, i) => (
                 <span key={p.n} className="chip">
                   <span className="chip-num">{p.n}</span><span className="chip-cnt">×{p.count}</span>
@@ -577,8 +600,12 @@ export default function Analytics({ stats: localStats, history }) {
 
           <div className="grid-res grid-cols-1 lg:grid-cols-2">
             <div className="card">
-              <div className="ctitle">🔗 เลขท้าย 3 ตัว — Top 12 <span className="pb-back3 prize-badge">เลขท้าย 3 ตัว</span></div>
-              <div className="chips">
+              <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <Link2 size={14} style={{ color: "var(--accent)" }} />
+                <span>เลขท้าย 3 ตัว — Top 12</span> 
+                <span className="pb-back3 prize-badge">เลขท้าย 3 ตัว</span>
+              </div>
+              <div className="chips mt">
                 {stats.back3Arr ? stats.back3Arr.slice(0, 12).map((p, i) => (
                   <span key={p.n + i} className={`chip${i < 3 ? " top" : ""}`}>
                     <span className="chip-num">{p.n}</span><span className="chip-cnt">×{p.count}</span>
@@ -587,8 +614,12 @@ export default function Analytics({ stats: localStats, history }) {
               </div>
             </div>
             <div className="card">
-              <div className="ctitle">🔗 เลขหน้า 3 ตัว — Top 12 <span className="pb-front3 prize-badge">เลขหน้า 3 ตัว</span></div>
-              <div className="chips">
+              <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <Link2 size={14} style={{ color: "var(--green)" }} />
+                <span>เลขหน้า 3 ตัว — Top 12</span> 
+                <span className="pb-front3 prize-badge">เลขหน้า 3 ตัว</span>
+              </div>
+              <div className="chips mt">
                 {stats.front3Arr ? stats.front3Arr.slice(0, 12).map((p, i) => (
                   <span key={p.n + i} className={`chip${i < 3 ? " top" : ""}`} style={i < 3 ? { borderColor: "var(--green)" } : {}}>
                     <span className="chip-num" style={i < 3 ? { color: "#66bb6a" } : {}}>{p.n}</span>
