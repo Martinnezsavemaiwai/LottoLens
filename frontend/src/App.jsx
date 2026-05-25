@@ -1,81 +1,134 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import "./config/theme.css";
-import { getStats } from "./utils/mathEngine";
-import { fetchDraws, fetchStatsSummary } from "./services/api";
-import { fmtTH, mapBackendDraw } from "./utils/helpers";
+import { getStats, getLaoStats } from "./utils/mathEngine";
+import { fetchLotteryHistory, fetchLotteryStats } from "./services/api";
+import { fmtTH, mapBackendDraw, mapBackendLaoDraw } from "./utils/helpers";
+import { HISTORY } from "./data/history";
+import { LAO_HISTORY } from "./data/laoHistory";
 import Loading from "./components/common/Loading";
 import Skeleton from "./components/ui/Skeleton";
+import LotterySwitcher from "./components/common/LotterySwitcher";
+import { useLottery } from "./context/LotteryContext";
 import Analytics from "./components/tabs/Analytics";
 import Trends    from "./components/tabs/Trends";
 import AIPredict from "./components/tabs/AIPredict";
 import Tools     from "./components/tabs/Tools";
 import HistTab   from "./components/tabs/HistTab";
 
+import { BarChart3, TrendingUp, Bot, Dices, History, AlertTriangle } from "lucide-react";
+
 const TABS = [
-  { id:"analytics", label:"📊 สถิติ" },
-  { id:"trends",    label:"📈 แนวโน้ม" },
-  { id:"ai",        label:"🤖 AI คาดเดา" },
-  { id:"tools",     label:"🎰 เครื่องมือ" },
-  { id:"history",   label:"📋 ประวัติ" },
+  { id:"analytics", label:"สถิติ", icon: BarChart3 },
+  { id:"trends",    label:"แนวโน้ม", icon: TrendingUp },
+  { id:"ai",        label:"AI คาดเดา", icon: Bot },
+  { id:"tools",     label:"เครื่องมือ", icon: Dices },
+  { id:"history",   label:"ประวัติ", icon: History },
 ];
 
 export default function App() {
   const [tab, setTab] = useState("analytics");
+  const { lotteryType } = useLottery();
 
-  // 1. Fetch History (Draws)
+  // 1. Fetch History (Draws) dynamically based on active lotteryType
   const { 
     data: historyData, 
     isLoading: histLoading, 
     isError: histError 
   } = useQuery({
-    queryKey: ["draws"],
-    queryFn: () => fetchDraws(1, 1000), // Get all for math engine
-    select: (res) => (res.data || []).map(mapBackendDraw),
+    queryKey: ["draws", lotteryType],
+    queryFn: () => fetchLotteryHistory(lotteryType, 1, 1000), // Get all for math engine
+    select: (res) => (res.data || []).map(lotteryType === "lao" ? mapBackendLaoDraw : mapBackendDraw),
   });
 
-  // 2. Fetch Stats Summary (Backend Logic)
+  // 2. Fetch Stats Summary dynamically based on active lotteryType
   const { 
     data: backendStats, 
     isLoading: statsLoading 
   } = useQuery({
-    queryKey: ["stats", "summary"],
-    queryFn: fetchStatsSummary,
+    queryKey: ["stats", "summary", lotteryType],
+    queryFn: () => fetchLotteryStats(lotteryType),
   });
 
-  const history = historyData || [];
+  // Fallback to static datasets if API fails or backend is empty
+  const history = useMemo(() => {
+    if (historyData && historyData.length > 0) return historyData;
+    return lotteryType === "lao" ? LAO_HISTORY : HISTORY;
+  }, [historyData, lotteryType]);
   
-  // 3. Client-side Math Engine (Hybrid)
+  // 3. Client-side Math Engine (Hybrid/Polymorphic)
   const stats = useMemo(() => {
     if (history.length === 0) return null;
-    const clientStats = getStats(history);
-    
-    // Merge backend stats if available (Overriding client logic with Go logic)
-    if (backendStats) {
-      return {
-        ...clientStats,
-        backend: backendStats, // Keep for reference
-        // Override specific fields if backend provides them
-        ...(backendStats.top_frequency && { back2Arr: backendStats.top_frequency }),
-      };
+
+    if (lotteryType === "lao") {
+      const clientStats = getLaoStats(history);
+      // Merge Go backend stats if available
+      if (backendStats && backendStats.type === "lao" && backendStats.data) {
+        const bs = backendStats.data;
+        const mergedHot = bs.hot ? bs.hot.map(x => ({ d: x.digit, digit: x.digit, count: x.count, gap: x.gap })) : clientStats.hot;
+        const mergedCold = bs.cold ? bs.cold.map(x => ({ d: x.digit, digit: x.digit, count: x.count, gap: x.gap })) : clientStats.cold;
+        const mergedOverdue = bs.overdue ? bs.overdue.map(x => ({ d: x.digit, digit: x.digit, count: x.count, gap: x.gap })) : clientStats.overdue;
+
+        return {
+          ...clientStats,
+          backend: bs,
+          hot: mergedHot,
+          cold: mergedCold,
+          overdue: mergedOverdue,
+          hotSet: new Set(mergedHot.map(h => h.d)),
+          coldSet: new Set(mergedCold.map(c => c.d)),
+          ...(bs.top_tail4 && { tail4Arr: bs.top_tail4 }),
+          ...(bs.top_top2 && { top2Arr: bs.top_top2 }),
+          ...(bs.top_bottom2 && { bottom2Arr: bs.top_bottom2 }),
+          ...(bs.z_scores && { zScores: bs.z_scores }),
+        };
+      }
+      return clientStats;
+    } else {
+      const clientStats = getStats(history);
+      // Merge Go backend stats if available (Overriding client logic with Go logic)
+      if (backendStats) {
+        const bs = backendStats.data || backendStats;
+        return {
+          ...clientStats,
+          backend: bs, // Keep for reference
+          // Override specific fields if backend provides them
+          ...(bs.top_frequency && { back2Arr: bs.top_frequency }),
+        };
+      }
+      return clientStats;
     }
-    return clientStats;
-  }, [history, backendStats]);
+  }, [history, backendStats, lotteryType]);
 
   const last = history[0];
 
-  // Removed full-screen Loading return to prevent CLS
-  if (histError) return <div className="app"><div className="card mt error">❌ ไม่สามารถดึงข้อมูลจาก API ได้ กรุณาตรวจสอบ Backend</div></div>;
+  const logoTitle = lotteryType === "lao" ? "LAO Lotto AI" : "THAI Lotto AI";
+  const logoSub = lotteryType === "lao" ? "หวยลาวพัฒนา" : "สลากกินแบ่งรัฐบาล";
+
+  // Filter tabs for Lao mode (Lao strictly presents Analytics, AI Predict, and History)
+  const currentTabs = useMemo(() => {
+    return TABS.filter(t => lotteryType === "thai" || ["analytics", "ai", "history"].includes(t.id));
+  }, [lotteryType]);
+
+  // Adjust active tab if it's no longer available in Lao mode
+  useMemo(() => {
+    if (lotteryType === "lao" && !["analytics", "ai", "history"].includes(tab)) {
+      setTab("analytics");
+    }
+  }, [lotteryType, tab]);
 
   return (
-    <div className="app">
+    <div className={`app mode-${lotteryType}`}>
       {/* ── Header ── */}
       <header className="hdr">
         <div className="hdr-in">
           <div className="logo-wrap">
-            <div className="logo">🏆 ThaiLotto AI</div>
-            <div className="logo-sub">สลากกินแบ่งรัฐบาล · {histLoading ? "..." : history.length} งวด</div>
+            <div className="logo">{logoTitle}</div>
+            <div className="logo-sub">{logoSub} · {histLoading ? "..." : history.length} งวด</div>
           </div>
+
+          {/* Premium Glassmorphic Switcher */}
+          <LotterySwitcher />
 
           <div className="hdr-prize" aria-label="ผลล่าสุด">
             {histLoading ? (
@@ -83,69 +136,106 @@ export default function App() {
               <>
                 {[1, 2, 3, 4].map(i => (
                   <div key={i} className="prize-pill" style={{border: 'none', background: 'transparent', padding: 0}}>
-                    <Skeleton width={i === 1 ? 100 : 80} height={42} />
+                    <Skeleton width={80} height={42} />
                   </div>
                 ))}
               </>
             ) : last ? (
-              <>
-                <div className="prize-pill">
-                  <div className="prize-lbl">งวด {fmtTH(last.dateTH)}</div>
-                  <div className="prize-num first">{last.first}</div>
-                </div>
-                <div className="prize-pill">
-                  <div className="prize-lbl">เลขหน้า 3 ตัว</div>
-                  <div className="prize-num" style={{color:"var(--green)",fontSize:13}}>
-                    {last.front3.join(" / ")}
+              lotteryType === "lao" ? (
+                // Lao Draw Header Display
+                <>
+                  <div className="prize-pill lao-prize-pill">
+                    <div className="prize-lbl">งวด {fmtTH(last.dateTH || last.date)}</div>
+                    <div className="prize-num first" style={{color:"var(--lao-accent2)"}}>{last.tail4}</div>
                   </div>
-                </div>
-                <div className="prize-pill">
-                  <div className="prize-lbl">เลขท้าย 3 ตัว</div>
-                  <div className="prize-num" style={{color:"var(--blue)",fontSize:13}}>
-                    {last.back3.join(" / ")}
+                  <div className="prize-pill lao-prize-pill">
+                    <div className="prize-lbl">3 ตัวบน</div>
+                    <div className="prize-num" style={{color:"var(--green)",fontSize:16}}>
+                      {last.top3}
+                    </div>
                   </div>
-                </div>
-                <div className="prize-pill">
-                  <div className="prize-lbl">เลขท้าย 2 ตัว</div>
-                  <div className="prize-num" style={{color:"var(--red)",fontSize:20,letterSpacing:5}}>
-                    {last.back2}
+                  <div className="prize-pill lao-prize-pill">
+                    <div className="prize-lbl">2 ตัวบน</div>
+                    <div className="prize-num" style={{color:"var(--blue)",fontSize:16}}>
+                      {last.top2}
+                    </div>
                   </div>
-                </div>
-              </>
+                  <div className="prize-pill lao-prize-pill">
+                    <div className="prize-lbl">2 ตัวล่าง</div>
+                    <div className="prize-num" style={{color:"var(--red)",fontSize:18,letterSpacing:4}}>
+                      {last.bottom2}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // Thai Draw Header Display
+                <>
+                  <div className="prize-pill">
+                    <div className="prize-lbl">งวด {fmtTH(last.dateTH)}</div>
+                    <div className="prize-num first">{last.first}</div>
+                  </div>
+                  <div className="prize-pill">
+                    <div className="prize-lbl">เลขหน้า 3 ตัว</div>
+                    <div className="prize-num" style={{color:"var(--green)",fontSize:13}}>
+                      {last.front3.join(" / ")}
+                    </div>
+                  </div>
+                  <div className="prize-pill">
+                    <div className="prize-lbl">เลขท้าย 3 ตัว</div>
+                    <div className="prize-num" style={{color:"var(--blue)",fontSize:13}}>
+                      {last.back3.join(" / ")}
+                    </div>
+                  </div>
+                  <div className="prize-pill">
+                    <div className="prize-lbl">เลขท้าย 2 ตัว</div>
+                    <div className="prize-num" style={{color:"var(--red)",fontSize:20,letterSpacing:5}}>
+                      {last.back2}
+                    </div>
+                  </div>
+                </>
+              )
             ) : (
               <div style={{fontSize:11,color:"var(--txt3)", opacity: 0.5}}>รอการ Sync ข้อมูล...</div>
             )}
           </div>
 
           <nav className="tabs" aria-label="เมนูหลัก">
-            {TABS.map(t => (
-              <button
-                key={t.id}
-                id={`tab-${t.id}`}
-                className={`tab${tab===t.id?" on":""}`}
-                onClick={() => setTab(t.id)}
-                aria-current={tab===t.id?"page":undefined}
-              >
-                {t.label}
-              </button>
-            ))}
+            {currentTabs.map(t => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  id={`tab-${t.id}`}
+                  className={`tab${tab===t.id?" on":""}`}
+                  onClick={() => setTab(t.id)}
+                  aria-current={tab===t.id?"page":undefined}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  <Icon size={12} className="sv" />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
           </nav>
         </div>
       </header>
 
       {/* ── Main Content ── */}
       <main className="wrap">
-        <div className="disc" role="note">
-          🎲 <strong>Reality Check:</strong> ผลสลากกินแบ่งรัฐบาลเป็น Randomness อย่างแท้จริง ไม่มีระบบใดทำนายได้ 100%
-          ระบบนี้ใช้ Data Science วิเคราะห์ Statistical Pattern จากข้อมูลจริง {history.length} งวด เพื่อประกอบการตัดสินใจเท่านั้น
-          <strong> กรุณาบริหารความเสี่ยงอย่างมีสติ</strong>
+        <div className="disc" role="note" style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+          <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
+          <div>
+            <strong>Reality Check:</strong> ผลการออกรางวัลเป็น Randomness อย่างแท้จริง ไม่มีระบบใดทำนายได้ 100%
+            ระบบนี้ใช้ Data Science วิเคราะห์ Statistical Pattern จากข้อมูลจริง {history.length} งวด เพื่อประกอบการตัดสินใจเท่านั้น
+            <strong> กรุณาบริหารความเสี่ยงอย่างมีสติ</strong>
+          </div>
         </div>
 
         {(!history || history.length === 0) && tab !== 'history' ? (
-          <div className="card mt" style={{background:"var(--s1)",border:"1px solid rgba(201,149,42,0.2)",padding:28,textAlign:"center"}}>
-            <div style={{fontSize:40,marginBottom:16}}>📝</div>
-            <h3 style={{color:"var(--gold2)",marginBottom:8}}>ยังไม่มีข้อมูลหวยในระบบ</h3>
-            <p style={{fontSize:13,color:"var(--txt3)",marginBottom:20}}>กรุณาไปที่เมนู "ประวัติ" เพื่อทำการ Sync ข้อมูลจาก Sanook</p>
+          <div className="card mt" style={{background:"var(--s1)",border:"1px solid rgba(201,149,42,0.2)",padding:28,textAlign:"center", display: "flex", flexDirection: "column", alignItems: "center"}}>
+            <History size={40} style={{ color: "var(--accent2)", marginBottom: 16 }} />
+            <h3 style={{color:"var(--accent2)",marginBottom:8}}>ยังไม่มีข้อมูลหวยในระบบ</h3>
+            <p style={{fontSize:13,color:"var(--txt3)",marginBottom:20}}>กรุณาไปที่เมนู "ประวัติ" เพื่อทำการประมวลผลข้อมูล</p>
             <button className="btn btn-g" onClick={()=>setTab('history')}>ไปที่หน้าประวัติ</button>
           </div>
         ) : (
