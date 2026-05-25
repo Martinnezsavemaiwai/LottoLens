@@ -1,27 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&family=Chakra+Petch:wght@400;600;700&family=Cinzel:wght@600;900&display=swap');
 
 :root {
-  --bg: #07080d;
-  --s1: #0d0f18;
-  --s2: #121520;
-  --s3: #181c2e;
-  --s4: #1e2438;
+  --bg: #0f172a;
+  --s1: #1e293b;
+  --s2: #334155;
+  --s3: #475569;
+  --s4: #64748b;
   --gold: #c9952a;
   --gold2: #f0b429;
   --gold3: #ffe082;
-  --red: #e53935;
-  --blue: #3d8ef0;
-  --cyan: #00bcd4;
-  --green: #43a047;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --cyan: #06b6d4;
+  --green: #22c55e;
   --purple: #8b5cf6;
   --pink: #ec4899;
-  --txt: #e8e4da;
-  --txt2: #9aa0b8;
-  --txt3: #4a5170;
-  --bdr: rgba(201,149,42,0.18);
-  --bdr2: rgba(201,149,42,0.08);
+  --txt: #f8fafc;
+  --txt2: #cbd5e1;
+  --txt3: #94a3b8;
+  --bdr: rgba(255,255,255,0.08);
+  --bdr2: rgba(255,255,255,0.04);
   --r: 14px;
-  --glow: 0 0 40px rgba(201,149,42,0.08);
+  --glow: 0 4px 20px rgba(0,0,0,0.3);
 
   /* ── Lao Mode Design Tokens ── */
   --lao-accent:  #a78bfa;
@@ -37,6 +37,35 @@
   --accent3: var(--gold3);
   --active-glow: var(--glow);
   --active-bdr:  var(--bdr);
+  --active-bdr2: var(--bdr2);
+}
+
+/* ── Light Mode Design Tokens ── */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --s1: #ffffff;
+  --s2: #f1f5f9;
+  --s3: #e2e8f0;
+  --s4: #cbd5e1;
+  
+  --txt: #0f172a;
+  --txt2: #334155;
+  --txt3: #64748b;
+  
+  --bdr: #e2e8f0;
+  --bdr2: #f1f5f9;
+  --glow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+
+  --active-glow: var(--glow);
+  --active-bdr: #cbd5e1;
+  --active-bdr2: #e2e8f0;
+}
+
+[data-theme="light"].mode-lao {
+  --bdr: rgba(167,139,250,0.4);
+  --bdr2: rgba(167,139,250,0.2);
+  --active-glow: 0 4px 20px rgba(0,0,0,0.05);
+  --active-bdr: var(--bdr);
   --active-bdr2: var(--bdr2);
 }
 
@@ -99,21 +128,28 @@ body::before {
 
 /* ── Header ── */
 .hdr {
-  background: rgba(7,8,13,0.92);
-  backdrop-filter: blur(24px);
+  background: rgba(15,23,42,0.85);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--bdr);
   position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 1px 0 var(--bdr2), 0 4px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 0 var(--bdr2), 0 4px 20px rgba(0,0,0,0.2);
+}
+[data-theme="light"] .hdr { 
+  background: rgba(255, 255, 255, 0.85); 
+  box-shadow: 0 1px 0 var(--bdr2), 0 4px 10px rgba(0,0,0,0.03);
+}
+[data-theme="light"] body::before {
+  opacity: 0.3;
 }
 .hdr-in {
   display: flex; align-items: center; gap: 12px;
   padding: 6px 20px; max-width: 1280px; margin: 0 auto;
-  min-height: 60px; height: auto; flex-wrap: wrap;
+  min-height: 60px; height: auto; flex-wrap: nowrap;
 }
 .logo-wrap { flex-shrink: 0; }
 .logo {
   font-family: 'Playfair Display', serif;
-  font-size: 20px; font-weight: 900;
+  font-size: clamp(16px, 3vw, 20px); font-weight: 900;
   background: linear-gradient(135deg, #c9952a 0%, #f0b429 50%, #ffe082 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -145,20 +181,23 @@ body::before {
 
 /* Tabs */
 .tabs {
-  display: flex; gap: 2px; flex-shrink: 1;
+  display: flex; gap: 4px; flex-shrink: 1;
   background: rgba(255,255,255,0.03);
-  padding: 3px; border-radius: 10px;
+  padding: 4px; border-radius: 12px;
   border: 1px solid var(--bdr2);
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
-  padding: 5px 12px; border-radius: 8px;
-  font-size: 11px; font-weight: 600; font-family: 'Sarabun', sans-serif;
+  padding: 8px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; font-family: 'Sarabun', sans-serif;
   color: var(--txt3); cursor: pointer; border: none;
-  background: transparent; transition: all 0.2s; white-space: nowrap;
+  background: transparent; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+  white-space: nowrap; scroll-snap-align: start; min-height: 38px;
 }
 .tab.on {
   background: var(--s3); color: var(--gold2);
@@ -166,7 +205,7 @@ body::before {
 }
 
 /* ── Layout ── */
-.wrap { max-width: 1280px; margin: 0 auto; padding: 20px 20px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: clamp(12px, 3vw, 24px); }
 
 /* ── Cards ── */
 .card {
@@ -320,10 +359,11 @@ body::before {
 
 /* ── Buttons ── */
 .btn {
-  padding: 9px 20px; border-radius: 10px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s; border: none; font-family: 'Sarabun', sans-serif;
+  padding: 12px 24px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; cursor: pointer; min-height: 44px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); border: none; font-family: 'Sarabun', sans-serif;
 }
+.btn:active { transform: scale(0.96) !important; }
 .btn-g {
   background: linear-gradient(135deg,rgba(201,149,42,0.2),rgba(201,149,42,0.07));
   border: 1px solid var(--gold); color: var(--gold2);
@@ -491,36 +531,133 @@ body::before {
 
 @media (max-width: 1280px) {
   .hdr-in {
-    flex-direction: column;
-    height: auto;
     padding: 12px 16px;
-    gap: 10px;
-    align-items: stretch;
+    gap: 12px;
+  }
+  .pos-grid { grid-template-columns: repeat(3, 1fr); }
+  .g4, .g5 { grid-template-columns: repeat(2, 1fr); }
+  .cal-grid { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* Tablet & Small Desktop (769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hdr-in {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px 16px;
+    align-items: center;
+    padding: 12px 20px;
   }
   .logo-wrap {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .lottery-switcher {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    margin-left: 8px;
+  }
+  .theme-btn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
   }
   .hdr-prize {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    width: 100%;
+    overflow: visible;
+  }
+  .tabs {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Desktop Screens (min-width: 1025px) */
+@media (min-width: 1025px) {
+  .hdr-in {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px 16px;
+    align-items: center;
+    padding: 12px 20px;
+  }
+  .logo-wrap {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .lottery-switcher {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    margin-left: 8px;
+  }
+  .theme-btn {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .hdr-prize {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    justify-content: flex-start;
+    overflow: visible;
+  }
+  .tabs {
+    grid-column: 2 / span 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 768px) {
+  .hdr-in {
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .logo-wrap {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  .theme-btn {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .lottery-switcher {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    width: 100%;
+    max-width: 320px;
+  }
+  .hdr-prize {
+    grid-column: 1 / -1;
+    grid-row: 3;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 6px;
     width: 100%;
   }
-  .lottery-switcher {
-    align-self: center;
-    margin: 4px 0;
-  }
   .tabs {
-    justify-content: center;
+    grid-column: 1 / -1;
+    grid-row: 4;
     width: 100%;
+    justify-content: flex-start;
   }
-  .pos-grid { grid-template-columns: repeat(3, 1fr); }
-  .g4, .g5 { grid-template-columns: repeat(2, 1fr); }
-  .cal-grid { grid-template-columns: repeat(6, 1fr); }
 }
+
 
 /* ══════════════════════════════════════════════════════
    LOTTERY SWITCHER — Glassmorphic Segmented Control
@@ -558,6 +695,7 @@ body::before {
 .ls-btn {
   position: relative; z-index: 1;
   display: flex; align-items: center; gap: 6px;
+  justify-content: center; flex: 1;
   padding: 6px 14px; border-radius: 9px;
   font-size: 11px; font-weight: 600;
   font-family: 'Sarabun', sans-serif;
