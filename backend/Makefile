@@ -3,7 +3,7 @@
 # ──────────────────────────────────────────────────────
 # ป้องกันปัญหา CGO บน Windows โดยตั้งค่า CGO_ENABLED=0
 
-.PHONY: generate tidy migrate dev seed build
+.PHONY: generate tidy migrate dev seed build test test-coverage test-race
 
 ## ดึง dependencies ทั้งหมด
 tidy:
@@ -25,9 +25,19 @@ seed:
 dev:
 	CGO_ENABLED=0 go run ./cmd/api
 
-## รัน Unit Tests
+## รัน Unit Tests (ทุก package)
 test:
-	go test ./internal/services/... -v
+	CGO_ENABLED=0 go test ./... -v -timeout 30s
+
+## รัน Tests พร้อม Coverage Report
+test-coverage:
+	CGO_ENABLED=0 go test ./... -coverprofile=coverage.out -covermode=atomic -timeout 60s
+	go tool cover -func=coverage.out | grep total
+	go tool cover -html=coverage.out -o coverage.html
+
+## รัน Tests พร้อมตรวจ Race Condition
+test-race:
+	go test ./... -race -timeout 60s
 
 ## รันระบบทั้งหมดด้วย Docker
 docker-up:
