@@ -19,7 +19,12 @@ import (
 // Derivation: tail4=full[2:], top3=full[3:], top2=full[4:], bottom2=full[2:4]
 var realData = []services.LaoSeedEntry{
 	// พ.ค. 2569
+	{Date: "2026-05-28", Full: "352415", Verified: true},
+	{Date: "2026-05-27", Full: "680172", Verified: true},
+	{Date: "2026-05-26", Full: "922679", Verified: true},
+	{Date: "2026-05-25", Full: "691489", Verified: true},
 	{Date: "2026-05-22", Full: "743763", Verified: true},
+	{Date: "2026-05-21", Full: "938769", Verified: true},
 	{Date: "2026-05-18", Full: "563369", Verified: true},
 	{Date: "2026-05-15", Full: "807095", Verified: true},
 	{Date: "2026-05-14", Full: "979996", Verified: true},
@@ -58,7 +63,6 @@ var realData = []services.LaoSeedEntry{
 	{Date: "2026-03-16", Full: "996315", Verified: true},
 	{Date: "2026-03-13", Full: "093786", Verified: true},
 	{Date: "2026-03-11", Full: "845181", Verified: true},
-	{Date: "2026-03-09", Full: "518181", Verified: false},
 	{Date: "2026-03-06", Full: "392926", Verified: false},
 	{Date: "2026-03-04", Full: "412958", Verified: false},
 	{Date: "2026-03-02", Full: "073289", Verified: false},
@@ -68,12 +72,12 @@ var realData = []services.LaoSeedEntry{
 	{Date: "2026-02-23", Full: "060013", Verified: false},
 	{Date: "2026-02-20", Full: "241955", Verified: true},
 	{Date: "2026-02-18", Full: "606209", Verified: true},
-	{Date: "2026-02-16", Full: "263702", Verified: true},
+	{Date: "2026-02-16", Full: "943702", Verified: true},
 	{Date: "2026-02-13", Full: "966668", Verified: true},
 	{Date: "2026-02-11", Full: "596469", Verified: true},
 	{Date: "2026-02-09", Full: "225509", Verified: true},
 	{Date: "2026-02-06", Full: "837430", Verified: false},
-	{Date: "2026-02-04", Full: "087085", Verified: false},
+	{Date: "2026-02-04", Full: "168073", Verified: true},
 	{Date: "2026-02-02", Full: "087085", Verified: false},
 	// ม.ค. 2569
 	{Date: "2026-01-30", Full: "077039", Verified: false},
