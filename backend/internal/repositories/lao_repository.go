@@ -40,7 +40,7 @@ type LaoDeepStats struct {
 	EvenPct int `json:"even_pct"`
 	HiPct   int `json:"hi_pct"`
 	LoPct   int `json:"lo_pct"`
-	Dbl2Pct int `json:"dbl2_pct"` // % งวดที่ bottom2 เป็นเลขเบิ้ล
+	Dbl2Pct int `json:"dbl2_pct"` // % งวดที่ top2 เป็นเลขเบิ้ล
 }
 
 // ── Interface ────────────────────────────────────────────────────────────────
@@ -169,12 +169,12 @@ func (r *laoRepository) GetStats(ctx context.Context) (*LaoStatsResult, error) {
 			if p >= 2 { break }
 			top2Pos[p][int(ch-'0')]++
 		}
-		// bottom2 positional + double check
+		// bottom2 positional + double check (refocused double check to top2)
 		for p, ch := range d.Bottom2 {
 			if p >= 2 { break }
 			bot2Pos[p][int(ch-'0')]++
 		}
-		if len(d.Bottom2) == 2 && d.Bottom2[0] == d.Bottom2[1] { dbl2Count++ }
+		if len(d.Top2) == 2 && d.Top2[0] == d.Top2[1] { dbl2Count++ }
 
 		// Pair/combo frequency
 		tail4Freq[d.Tail4]++

@@ -107,17 +107,10 @@ export default function App() {
   const logoTitle = lotteryType === "lao" ? "LAO Lotto AI" : "THAI Lotto AI";
   const logoSub = lotteryType === "lao" ? "หวยลาวพัฒนา" : "สลากกินแบ่งรัฐบาล";
 
-  // Filter tabs for Lao mode (Lao strictly presents Analytics, AI Predict, and History)
-  const currentTabs = useMemo(() => {
-    return TABS.filter(t => lotteryType === "thai" || ["analytics", "ai", "history"].includes(t.id));
-  }, [lotteryType]);
+  // All 5 tabs available for both Thai and Lao modes
+  const currentTabs = TABS;
 
-  // Adjust active tab if it's no longer available in Lao mode
-  useMemo(() => {
-    if (lotteryType === "lao" && !["analytics", "ai", "history"].includes(tab)) {
-      setTab("analytics");
-    }
-  }, [lotteryType, tab]);
+
 
   return (
     <div className={`app mode-${lotteryType}`}>
@@ -152,21 +145,15 @@ export default function App() {
                     <div className="prize-num first" style={{color:"var(--lao-accent2)"}}>{last.tail4}</div>
                   </div>
                   <div className="prize-pill lao-prize-pill">
-                    <div className="prize-lbl">3 ตัวบน</div>
+                    <div className="prize-lbl">เลขท้าย 3 ตัว</div>
                     <div className="prize-num" style={{color:"var(--green)",fontSize:16}}>
                       {last.top3}
                     </div>
                   </div>
                   <div className="prize-pill lao-prize-pill">
-                    <div className="prize-lbl">2 ตัวบน</div>
+                    <div className="prize-lbl">เลขท้าย 2 ตัว</div>
                     <div className="prize-num" style={{color:"var(--blue)",fontSize:16}}>
                       {last.top2}
-                    </div>
-                  </div>
-                  <div className="prize-pill lao-prize-pill">
-                    <div className="prize-lbl">2 ตัวล่าง</div>
-                    <div className="prize-num" style={{color:"var(--red)",fontSize:18,letterSpacing:4}}>
-                      {last.bottom2}
                     </div>
                   </div>
                 </>
@@ -225,7 +212,7 @@ export default function App() {
           <button 
             className="theme-btn" 
             onClick={toggleTheme} 
-            aria-label="Toggle Theme"
+            aria-label={theme === "light" ? "เปลี่ยนเป็น Dark Mode" : "เปลี่ยนเป็น Light Mode"}
             style={{
               background: "var(--s2)",
               border: "1px solid var(--bdr2)",

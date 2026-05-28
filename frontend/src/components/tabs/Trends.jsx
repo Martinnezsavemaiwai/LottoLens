@@ -83,7 +83,7 @@ export default function Trends({ stats, history }) {
         </div>
         <div className="fchips" style={{marginBottom:10}}>
           {lotteryType === "lao" ? (
-            [["tail4","เลขท้าย 4 ตัว"],["top3","เลข 3 ตัวบน"],["top2","เลข 2 ตัวบน"],["bottom2","เลข 2 ตัวล่าง"]].map(([k,l])=>(
+            [["tail4","เลขท้าย 4 ตัว"],["top3","เลขท้าย 3 ตัว"],["top2","เลขท้าย 2 ตัว"]].map(([k,l])=>(
               <button key={k} className={`fchip${prizeView===k?" on":""}`} onClick={()=>setPrizeView(k)}>{l}</button>
             ))
           ) : (
@@ -100,8 +100,8 @@ export default function Trends({ stats, history }) {
         <div style={{height:180}}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={trendData} margin={{top:0,right:10,left:-22,bottom:0}}>
-              <XAxis dataKey="date" tick={{fill:"#4a5170",fontSize:9}} axisLine={false} tickLine={false}/>
-              <YAxis allowDecimals={false} tick={{fill:"#4a5170",fontSize:10}} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="date" tick={{fill:"#4a5170",fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis allowDecimals={false} tick={{fill:"#4a5170",fontSize:11}} axisLine={false} tickLine={false}/>
               <Tooltip content={<CTip/>}/>
               <Line dataKey="count" name={`เลข ${sel}`} stroke="var(--gold2)" strokeWidth={2}
                 dot={{fill:"var(--gold2)",r:3}} activeDot={{r:5}}/>
@@ -113,7 +113,7 @@ export default function Trends({ stats, history }) {
       <div className="card">
         <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
           <Award size={16} style={{ color: "var(--accent)" }} />
-          <span>Combo Score — เลขท้าย {lotteryType === "lao" ? "2 ตัวล่าง" : "2 ตัว"}</span>
+          <span>Combo Score — เลขท้าย {lotteryType === "lao" ? "2 ตัว" : "2 ตัว"}</span>
           <span className="csub">= ความถี่(40%) + ระยะห่าง(30%) + โมเมนตัม(30%)</span>
         </div>
         <div className="chips">
@@ -139,9 +139,8 @@ export default function Trends({ stats, history }) {
                     <th>#</th>
                     <th>งวด</th>
                     <th>4 ตัวท้าย</th>
-                    <th>3 ตัวบน</th>
-                    <th>2 ตัวบน</th>
-                    <th>2 ตัวล่าง</th>
+                    <th>เลขท้าย 3 ตัว</th>
+                    <th>เลขท้าย 2 ตัว</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -152,7 +151,6 @@ export default function Trends({ stats, history }) {
                       <td style={{fontFamily:"Cinzel,serif",fontSize:16,color:"var(--lao-accent2)",letterSpacing:2,fontWeight:700}}>{row.tail4}</td>
                       <td style={{fontFamily:"Chakra Petch,sans-serif",fontSize:13,color:"var(--green)",letterSpacing:1}}>{row.top3}</td>
                       <td style={{fontFamily:"Chakra Petch,sans-serif",fontSize:13,color:"var(--blue)",letterSpacing:1}}>{row.top2}</td>
-                      <td style={{fontFamily:"Chakra Petch,sans-serif",fontSize:13,color:"var(--red)",letterSpacing:1}}>{row.bottom2}</td>
                     </tr>
                   ))}
                 </tbody>

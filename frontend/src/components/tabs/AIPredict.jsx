@@ -4,7 +4,7 @@ import { fetchAIContext } from "../../services/api";
 import { getNextDraw, getNextLaoDraw, parseJson } from "../../utils/helpers";
 import { useLottery } from "../../context/LotteryContext";
 import Skeleton from "../ui/Skeleton";
-import { Bot, Shield, Target, TrendingUp, AlertTriangle, MessageSquare, Search, Sparkles, Check, Award } from "lucide-react";
+import { Bot, Shield, Target, TrendingUp, AlertTriangle, MessageSquare, Search, Sparkles, Check, Award, BarChart3 } from "lucide-react";
 
 /**
  * Tab: AIPredict — วิเคราะห์หวยด้วย Gemini AI
@@ -38,8 +38,8 @@ export default function AIPredict({ history, stats }) {
 
   const LAO_PRIZE_META = {
     tail4: { label: "เลขท้าย 4 ตัว", digits: 4, color: "var(--lao-accent)", icon: Award, desc: "Full Positional × Markov Chain" },
-    top3: { label: "เลข 3 ตัวบน", digits: 3, color: "var(--green)", icon: Shield, desc: "Positional Entropy × Z-score" },
-    top2: { label: "เลข 2 ตัวบน", digits: 2, color: "var(--blue)", icon: Target, desc: "Combo Score × Markov × Recency" },
+    top3: { label: "เลขท้าย 3 ตัว", digits: 3, color: "var(--green)", icon: Shield, desc: "Positional Entropy × Z-score" },
+    top2: { label: "เลขท้าย 2 ตัว", digits: 2, color: "var(--blue)", icon: Target, desc: "Combo Score × Markov × Recency" },
   };
 
   const PRIZE_META = lotteryType === "lao" ? LAO_PRIZE_META : THAI_PRIZE_META;
@@ -193,10 +193,10 @@ ${contextStr}
   }
 
   const QUICK = lotteryType === "lao" ? [
-    "สรุปแนวโน้ม 2 ตัวล่างหวยลาวจากข้อมูลทั้งหมด",
+    "สรุปแนวโน้ม เลขท้าย 2 ตัวหวยลาวจากข้อมูลทั้งหมด",
     "วิเคราะห์ pattern เลขเบิ้ลหวยลาว",
     "วิเคราะห์หลักพัน vs หลักร้อย หวยลาวพัฒนา",
-    "เลขชุด 2 ตัวล่างที่สถิติดีที่สุด พร้อมเหตุผล",
+    "เลขชุด เลขท้าย 2 ตัวที่สถิติดีที่สุด พร้อมเหตุผล",
   ] : [
     "สรุปแนวโน้ม เลขท้าย 2 ตัวจากข้อมูลทั้งหมด",
     "วิเคราะห์ pattern งวดวันที่ 1 vs 16",
@@ -388,8 +388,9 @@ ${contextStr}
               </div>
 
               <div style={{ background: "var(--s1)", borderRadius: 11, padding: 14, border: "1px solid var(--bdr2)" }}>
-                <div style={{ fontSize: 9, color: meta.color, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 7 }}>
-                  📊 Mathematical Analysis Logic
+                <div style={{ fontSize: 9, color: meta.color, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 7, display: "flex", alignItems: "center", gap: "6px" }}>
+                  <BarChart3 size={12} />
+                  <span>Mathematical Analysis Logic</span>
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.82, color: "var(--txt)" }}>{result.logic}</p>
               </div>
