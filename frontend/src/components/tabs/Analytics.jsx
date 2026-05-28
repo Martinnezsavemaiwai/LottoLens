@@ -154,8 +154,8 @@ export default function Analytics({ stats: localStats, history }) {
     if (lotteryType === "lao") {
       return [
         ["tail4", "4 ตัวท้าย"],
-        ["top3", "3 ตัวบน"],
-        ["top2", "2 ตัวบน"],
+        ["top3", "เลขท้าย 3 ตัว"],
+        ["top2", "เลขท้าย 2 ตัว"],
       ];
     } else {
       return [
@@ -401,7 +401,7 @@ export default function Analytics({ stats: localStats, history }) {
               <div className="pbar">
                 <div className="pbar-lbrow">
                   <span style={{ color: "var(--purple)" }}>
-                    {lotteryType === "lao" ? "โอกาสเลขเบิ้ล 2 ตัวล่าง (00,11,...)" : "โอกาสเลขเบิ้ล เลขท้าย 2 ตัว (00,11,...)"}
+                    {lotteryType === "lao" ? "โอกาสเลขเบิ้ล เลขท้าย 2 ตัว (00,11,...)" : "โอกาสเลขเบิ้ล เลขท้าย 2 ตัว (00,11,...)"}
                   </span>
                   <span style={{ color: "var(--txt)", fontWeight: 600 }}>{stats.deep.dbl2Pct}%</span>
                 </div>
@@ -428,7 +428,7 @@ export default function Analytics({ stats: localStats, history }) {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <Check size={12} style={{ color: "var(--accent)" }} />
-                  <span>เลขเบิ้ล{lotteryType === "lao" ? " 2 ตัวล่าง" : " เลขท้าย 2 ตัว"}มีโอกาส <strong style={{ color: "var(--purple)" }}>{stats.deep.dbl2Pct}%</strong></span>
+                  <span>เลขเบิ้ล{lotteryType === "lao" ? " เลขท้าย 2 ตัว" : " เลขท้าย 2 ตัว"}มีโอกาส <strong style={{ color: "var(--purple)" }}>{stats.deep.dbl2Pct}%</strong></span>
                 </div>
               </>
             ) : (

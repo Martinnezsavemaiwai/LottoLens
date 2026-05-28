@@ -278,11 +278,11 @@ export default function HistTab({ history }) {
                     <div style={{fontFamily:"Chakra Petch,sans-serif", fontSize:18, color:"var(--lao-accent3)"}}>{derivedLao.tail4}</div>
                   </div>
                   <div style={{flex:1, minWidth:70}}>
-                    <div style={{fontSize:9, color:"var(--txt3)"}}>3 ตัวบน</div>
+                    <div style={{fontSize:9, color:"var(--txt3)"}}>เลขท้าย 3 ตัว</div>
                     <div style={{fontFamily:"Chakra Petch,sans-serif", fontSize:18, color:"var(--green)"}}>{derivedLao.top3}</div>
                   </div>
                   <div style={{flex:1, minWidth:70}}>
-                    <div style={{fontSize:9, color:"var(--txt3)"}}>2 ตัวบน</div>
+                    <div style={{fontSize:9, color:"var(--txt3)"}}>เลขท้าย 2 ตัว</div>
                     <div style={{fontFamily:"Chakra Petch,sans-serif", fontSize:18, color:"var(--blue)"}}>{derivedLao.top2}</div>
                   </div>
                 </div>
@@ -407,8 +407,8 @@ export default function HistTab({ history }) {
                     <th>งวด (พ.ศ.)</th>
                     <th>วันที่</th>
                     <th>4 ตัวท้าย</th>
-                    <th>3 ตัวบน</th>
-                    <th>2 ตัวบน</th>
+                    <th>เลขท้าย 3 ตัว</th>
+                    <th>เลขท้าย 2 ตัว</th>
                     <th>สถานะ</th>
                     <th>จัดการ</th>
                   </tr>

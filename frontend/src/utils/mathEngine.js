@@ -167,10 +167,10 @@ export function getLaoStats(history) {
     row.top2.split("").forEach((ch, p) => { if(p<2) top2PosFreq[p][+ch]++; });
     top2Freq[row.top2] = (top2Freq[row.top2]||0) + 1;
 
-    // bottom2 positional + pair freq + double
+    // bottom2 positional + pair freq + double (refocused double to top2)
     row.bottom2.split("").forEach((ch, p) => { if(p<2) bot2PosFreq[p][+ch]++; });
     bottom2Freq[row.bottom2] = (bottom2Freq[row.bottom2]||0) + 1;
-    if (row.bottom2[0] === row.bottom2[1]) dbl2++;
+    if (row.top2[0] === row.top2[1]) dbl2++;
 
     // tail4 pair freq
     tail4Freq[row.tail4] = (tail4Freq[row.tail4]||0) + 1;
@@ -187,16 +187,16 @@ export function getLaoStats(history) {
   const top2Arr    = Object.entries(top2Freq).map(([n,count])  => ({n,count})).sort((a,b) => b.count-a.count);
   const bottom2Arr = Object.entries(bottom2Freq).map(([n,count]) => ({n,count})).sort((a,b) => b.count-a.count);
 
-  // Combo score for bottom2 (freq 40% + gap 30% + recency 30%)
+  // Combo score for top2 (freq 40% + gap 30% + recency 30%)
   const trend = {};
   history.forEach((row, i) => {
     const w = i<5?5:i<15?3:i<30?2:1;
-    trend[row.bottom2] = (trend[row.bottom2]||0) + w;
+    trend[row.top2] = (trend[row.top2]||0) + w;
   });
-  const mxF = bottom2Arr[0]?.count||1;
+  const mxF = top2Arr[0]?.count||1;
   const mxT = Math.max(...Object.values(trend), 1);
   const cmap = {};
-  bottom2Arr.forEach(x => {
+  top2Arr.forEach(x => {
     cmap[x.n] = (x.count/mxF)*50 + ((trend[x.n]||0)/mxT)*50;
   });
   const combo = Object.entries(cmap).map(([n,s]) => ({n,s:Math.round(s)})).sort((a,b) => b.s-a.s);
