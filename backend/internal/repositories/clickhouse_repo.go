@@ -7,6 +7,7 @@ import (
 	"lotto-backend/prisma/db"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
@@ -66,37 +67,74 @@ func NewClickHouseRepo(host string) (ClickHouseRepo, error) {
 	}
 	pass := os.Getenv("CLICKHOUSE_PASSWORD")
 
+	var conn clickhouse.Conn
+	var err error
+	maxRetries := 15
+
 	// 1. Connect to default database first to ensure we can execute administrative queries
-	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{host + ":9000"},
-		Auth: clickhouse.Auth{
-			Database: "default", // Use default db first
-			Username: user,
-			Password: pass,
-		},
-	})
+	for i := 0; i < maxRetries; i++ {
+		conn, err = clickhouse.Open(&clickhouse.Options{
+			Addr: []string{host + ":9000"},
+			Auth: clickhouse.Auth{
+				Database: "default", // Use default db first
+				Username: user,
+				Password: pass,
+			},
+		})
+		if err == nil {
+			// Ping to ensure connection is ready
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			err = conn.Ping(ctx)
+			cancel()
+			if err == nil {
+				break
+			}
+			conn.Close()
+		}
+
+		fmt.Printf("⚠️ ClickHouse not ready yet (attempt %d/%d): %v. Retrying in 2s...\n", i+1, maxRetries, err)
+		time.Sleep(2 * time.Second)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to clickhouse: %v", err)
+		return nil, fmt.Errorf("failed to connect to clickhouse after %d retries: %v", maxRetries, err)
 	}
 
 	// 2. Create database if not exists
 	ctx := context.Background()
 	if err := conn.Exec(ctx, "CREATE DATABASE IF NOT EXISTS lotto_analytics"); err != nil {
+		conn.Close()
 		return nil, fmt.Errorf("failed to create database: %v", err)
 	}
 
 	// 3. Re-open connection with the correct database
 	conn.Close()
-	conn, err = clickhouse.Open(&clickhouse.Options{
-		Addr: []string{host + ":9000"},
-		Auth: clickhouse.Auth{
-			Database: "lotto_analytics",
-			Username: user,
-			Password: pass,
-		},
-	})
+
+	for i := 0; i < maxRetries; i++ {
+		conn, err = clickhouse.Open(&clickhouse.Options{
+			Addr: []string{host + ":9000"},
+			Auth: clickhouse.Auth{
+				Database: "lotto_analytics",
+				Username: user,
+				Password: pass,
+			},
+		})
+		if err == nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			err = conn.Ping(ctx)
+			cancel()
+			if err == nil {
+				break
+			}
+			conn.Close()
+		}
+
+		fmt.Printf("⚠️ ClickHouse lotto_analytics reconnect not ready yet (attempt %d/%d): %v. Retrying in 2s...\n", i+1, maxRetries, err)
+		time.Sleep(2 * time.Second)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to lotto_analytics: %v", err)
+		return nil, fmt.Errorf("failed to connect to lotto_analytics after %d retries: %v", maxRetries, err)
 	}
 
 	return &clickHouseRepo{conn: conn}, nil
