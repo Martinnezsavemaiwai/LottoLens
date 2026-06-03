@@ -1,6 +1,11 @@
 /**
- * Skeleton UI — Shimmer loading component to prevent Layout Shift
- * @param {{ variant: 'box' | 'circle' | 'text', width: string|number, height: string|number, className: string, style: Object }} props
+ * Skeleton UI — Shimmer loading component to prevent layout shifts.
+ * @param {Object} props
+ * @param {'box' | 'circle' | 'text'} [props.variant='box']
+ * @param {string|number} [props.width='100%']
+ * @param {string|number} [props.height='100%']
+ * @param {string} [props.className='']
+ * @param {Object} [props.style={}]
  */
 export default function Skeleton({ 
   variant = 'box', 

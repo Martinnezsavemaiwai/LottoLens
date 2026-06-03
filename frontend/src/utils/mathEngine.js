@@ -1,18 +1,18 @@
 /**
- * Math Engine — ฟังก์ชันคำนวณสถิติหวยไทยทั้งหมด
- * ห้ามเขียน Logic ซ้ำซ้อนใน UI — ให้เรียกใช้จากที่นี่เท่านั้น
+ * Math Engine — Mathematical calculation utilities for lottery statistics.
+ * Avoid duplicating logic in UI components — use functions from here instead.
  * @module utils/mathEngine
  */
 
 /**
- * คำนวณสถิติทั้งหมดจาก history array
- * @param {Array} history - HISTORY array จาก src/data/history.js
- * @returns {Object} stats object
+ * Computes all statistical metrics from history array.
+ * @param {Array} history - History array from src/data/history.js
+ * @returns {Object} Statistics object
  */
 export function getStats(history) {
   const N = history.length;
 
-  // ── 1. Frequency per prize type ──
+  // 1. Frequency per prize type
   const back2Freq = {};
   const back3Freq = {};
   const front3Freq = {};
@@ -21,7 +21,7 @@ export function getStats(history) {
   const digFreq = Array(10).fill(0);
   const lastDigSeen = {};
 
-  // Positional for back2 (2 pos), back3 (3 pos), first6 (6 pos)
+  // Positional frequency for back2 (2 positions), back3 (3 positions), first6 (6 positions)
   const back2PosFreq  = [Array(10).fill(0), Array(10).fill(0)];
   const back3PosFreq  = [Array(10).fill(0), Array(10).fill(0), Array(10).fill(0)];
   const front3PosFreq = [Array(10).fill(0), Array(10).fill(0), Array(10).fill(0)];
@@ -56,7 +56,7 @@ export function getStats(history) {
     // first6
     row.first.split("").forEach((d, p) => first6PosFreq[p][+d]++);
 
-    // digit freq (from back2 + back3 + front3 + first)
+    // digit frequency (from back2 + back3 + front3 + first)
     const allNums = [b2, ...row.back3, ...row.front3, row.first];
     allNums.forEach(num => {
       num.split("").forEach(d => {
@@ -123,10 +123,10 @@ export function getStats(history) {
 }
 
 /**
- * คำนวณสถิติทั้งหมดสำหรับหวยลาวพัฒนา
- * ใช้ 4 ฟิลด์หลัก: tail4 (4 ตัวท้าย), top3 (3 ตัวบน), top2 (2 ตัวบน), bottom2 (2 ตัวล่าง)
- * @param {Array} history - LAO_HISTORY array จาก src/data/laoHistory.js
- * @returns {Object} stats object
+ * Computes all statistical metrics for Lao lottery.
+ * Uses 4 main fields: tail4 (last 4 digits), top3 (last 3 digits), top2 (last 2 digits), bottom2 (first 2 digits of the 4-digit draw result)
+ * @param {Array} history - Lao history array from src/data/laoHistory.js
+ * @returns {Object} Statistics object
  */
 export function getLaoStats(history) {
   const N = history.length;
@@ -218,4 +218,3 @@ export function getLaoStats(history) {
     N,
   };
 }
-

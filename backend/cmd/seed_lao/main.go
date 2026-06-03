@@ -18,7 +18,11 @@ import (
 // Each entry: date (ISO) + full 6-digit draw number.
 // Derivation: tail4=full[2:], top3=full[3:], top2=full[4:], bottom2=full[2:4]
 var realData = []services.LaoSeedEntry{
-	// พ.ค. 2569
+	// มิ.ย. - พ.ค. 2569
+	{Date: "2026-06-03", Full: "390549", Verified: true},
+	{Date: "2026-06-02", Full: "963211", Verified: true},
+	{Date: "2026-06-01", Full: "587788", Verified: true},
+	{Date: "2026-05-29", Full: "762722", Verified: true},
 	{Date: "2026-05-28", Full: "352415", Verified: true},
 	{Date: "2026-05-27", Full: "680172", Verified: true},
 	{Date: "2026-05-26", Full: "922679", Verified: true},

@@ -6,7 +6,7 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("app-theme");
     if (savedTheme) return savedTheme;
-    // Default to dark mode for this app if not set
+    // Default to dark mode if not set
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   });
 

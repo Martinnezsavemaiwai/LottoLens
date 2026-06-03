@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { callGemini } from "../../services/gemini";
 import { parseJson } from "../../utils/helpers";
 import { Sparkles, Dices, Flame, Gift, Moon, Target, BarChart3, Clock, AlertTriangle, HelpCircle, Snowflake, Award, Search, HelpCircle as HelpIcon } from "lucide-react";
@@ -6,7 +6,7 @@ import { useLottery } from "../../context/LotteryContext";
 
 /**
  * Tab: Tools — Smart Pick, Dream interpreter, AI Scorer
- * รองรับทั้ง Thai และ Lao mode
+ * Supports both Thai and Lao modes
  * @param {{ stats: Object, history: Array }} props
  */
 export default function Tools({ stats, history }) {
@@ -26,6 +26,23 @@ export default function Tools({ stats, history }) {
   const [dreamNote, setDreamNote]     = useState("");
   const [evalData, setEvalData]       = useState(null);
   const [loading, setLoading]         = useState("");
+
+  // Reset all states and sync default prizeType when lotteryType switches
+  useEffect(() => {
+    setPrizeType(isLao ? "tail4" : "back2");
+    setMode("random");
+    setExCold(false);
+    setExDbl(false);
+    setDob("");
+    setDream("");
+    setEvalNum("");
+    setGenerated(null);
+    setGenHistory([]);
+    setRightContent("idle");
+    setDreamNote("");
+    setEvalData(null);
+    setLoading("");
+  }, [lotteryType, isLao]);
 
   // Prize types per mode
   const PRIZE_TYPES = isLao
@@ -75,6 +92,13 @@ export default function Tools({ stats, history }) {
     const prompt = `ตีความฝันและหาเลขมงคล${lotteryName}: "${dream}" ตอบ JSON: {"meaning":"ความหมายของฝัน","lucky2":"เลข2หลัก","lucky3":"เลข3หลัก","lucky4":"เลข4หลัก","reason":"เหตุผลสั้นๆ"}`;
     try {
       const text = await callGemini(prompt, "ตอบ JSON เท่านั้น");
+      if (text && typeof text === 'object' && text.error) {
+        setDreamNote(text.message);
+        setGenerated(null);
+        setRightContent("gen");
+        setLoading("");
+        return;
+      }
       const p = parseJson(text);
       if (p) {
         setDreamNote(`${p.meaning}${p.reason ? ` — ${p.reason}` : ""}`);
@@ -85,8 +109,16 @@ export default function Tools({ stats, history }) {
         setGenerated(luckyNum);
         setGenHistory(h => [luckyNum,...h.slice(0,8)].filter(Boolean));
         setRightContent("gen");
+      } else {
+        setDreamNote("ไม่สามารถแปลผลความฝันได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง");
+        setGenerated(null);
+        setRightContent("gen");
       }
-    } catch { setDreamNote("ไม่สามารถวิเคราะห์ได้"); }
+    } catch {
+      setDreamNote("เกิดข้อผิดพลาดในการวิเคราะห์ความฝัน");
+      setGenerated(null);
+      setRightContent("gen");
+    }
     setLoading("");
   }
 
@@ -115,8 +147,18 @@ Top2ล่าง=${back2Top3}, Top3ล่าง=${back3Top3}
 
     try {
       const text = await callGemini(prompt, "ตอบ JSON เท่านั้น");
-      setEvalData(parseJson(text)||{score:5,verdict:"ปานกลาง",reason:"ไม่สามารถประเมินได้"});
-    } catch { setEvalData({score:5,verdict:"ปานกลาง",reason:"เกิดข้อผิดพลาด"}); }
+      if (text && typeof text === 'object' && text.error) {
+        setEvalData({
+          score: 0,
+          verdict: "เกิดข้อผิดพลาด",
+          reason: text.message,
+        });
+      } else {
+        setEvalData(parseJson(text) || { score: 5, verdict: "ปานกลาง", reason: "ไม่สามารถประเมินได้" });
+      }
+    } catch {
+      setEvalData({ score: 5, verdict: "ปานกลาง", reason: "เกิดข้อผิดพลาดในการประเมิน" });
+    }
     setLoading(""); setRightContent("eval");
   }
 
@@ -259,22 +301,34 @@ Top2ล่าง=${back2Top3}, Top3ล่าง=${back3Top3}
             </div>
           )}
 
-          {rightContent==="gen" && generated && (
+          {rightContent==="gen" && (
             <div className="fade" style={{width:"100%",textAlign:"center"}}>
-              <div style={{fontSize:10,color:"var(--txt3)",letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>ผลลัพธ์</div>
-              <div className="nbig">{generated}</div>
-              <div className="nsubs">
-                {generated.length>=4&&<span>4 ตัว: <strong>{generated.slice(-4)}</strong></span>}
-                {generated.length>=3&&<span>3 ตัว: <strong>{generated.slice(-3)}</strong></span>}
-                <span>2 ตัว: <strong>{generated.slice(-2)}</strong></span>
-              </div>
+              {generated ? (
+                <>
+                  <div style={{fontSize:10,color:"var(--txt3)",letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>ผลลัพธ์</div>
+                  <div className="nbig">{generated}</div>
+                  <div className="nsubs">
+                    {generated.length>=4&&<span>4 ตัว: <strong>{generated.slice(-4)}</strong></span>}
+                    {generated.length>=3&&<span>3 ตัว: <strong>{generated.slice(-3)}</strong></span>}
+                    <span>2 ตัว: <strong>{generated.slice(-2)}</strong></span>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                  <AlertTriangle size={48} style={{ color: "var(--red)" }} />
+                </div>
+              )}
               {dreamNote && (
                 <div style={{marginTop:14,background:"var(--s2)",borderRadius:10,padding:12,fontSize:13,lineHeight:1.7,textAlign:"left", display: "flex", gap: "8px", alignItems: "flex-start"}}>
-                  <Moon size={16} style={{ color: "var(--accent)", flexShrink: 0, marginTop: "2px" }} />
+                  {generated ? (
+                    <Moon size={16} style={{ color: "var(--accent)", flexShrink: 0, marginTop: "2px" }} />
+                  ) : (
+                    <AlertTriangle size={16} style={{ color: "var(--red)", flexShrink: 0, marginTop: "2px" }} />
+                  )}
                   <div>{dreamNote}</div>
                 </div>
               )}
-              {genHistory.length>1 && (
+              {generated && genHistory.length>1 && (
                 <div style={{marginTop:16}}>
                   <div style={{fontSize:10,color:"var(--txt3)",letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>ประวัติที่สร้าง</div>
                   <div className="chips" style={{justifyContent:"center"}}>
@@ -300,11 +354,22 @@ Top2ล่าง=${back2Top3}, Top3ล่าง=${back3Top3}
                 </div>
               ) : evalData && (
                 <>
-                  <div style={{fontSize:52,fontFamily:"Chakra Petch,sans-serif",fontWeight:900,color:evalColor}}>
-                    {evalData.score}<span style={{fontSize:22,color:"var(--txt3)"}}>/ 10</span>
+                  {evalData.score > 0 ? (
+                    <>
+                      <div style={{fontSize:52,fontFamily:"Chakra Petch,sans-serif",fontWeight:900,color:evalColor}}>
+                        {evalData.score}<span style={{fontSize:22,color:"var(--txt3)"}}>/ 10</span>
+                      </div>
+                      <div style={{fontSize:15,fontWeight:700,color:evalColor,marginBottom:12}}>{evalData.verdict}</div>
+                    </>
+                  ) : (
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                      <AlertTriangle size={48} style={{ color: "var(--red)" }} />
+                    </div>
+                  )}
+                  <div style={{background:"var(--s2)",borderRadius:10,padding:14,fontSize:13,lineHeight:1.75,textAlign:"left", display: "flex", gap: "8px", alignItems: "flex-start"}}>
+                    {evalData.score === 0 && <AlertTriangle size={16} style={{ color: "var(--red)", flexShrink: 0, marginTop: "2px" }} />}
+                    <div>{evalData.reason}</div>
                   </div>
-                  <div style={{fontSize:15,fontWeight:700,color:evalColor,marginBottom:12}}>{evalData.verdict}</div>
-                  <div style={{background:"var(--s2)",borderRadius:10,padding:14,fontSize:13,lineHeight:1.75,textAlign:"left"}}>{evalData.reason}</div>
                 </>
               )}
             </div>

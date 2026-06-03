@@ -7,7 +7,7 @@ const api = axios.create({
   },
 });
 
-// v2 client — separate base URL for the multi-lottery engine
+// v2 client - separate base URL for the multi-lottery engine
 const apiV2 = axios.create({
   baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:8081').replace('/api/v1', '') + '/api/v2',
   headers: {
@@ -26,7 +26,7 @@ const attachAuthToken = (config) => {
 api.interceptors.request.use(attachAuthToken);
 apiV2.interceptors.request.use(attachAuthToken);
 
-// ── v1 (Thai lottery — existing) ─────────────────────────────────────────────
+// === v1 (Thai lottery) ===
 
 /** Fetch frequency statistics for a specific prize type */
 export const fetchFrequencyStats = async (prizeType = 'back2', limit = 10) => {
@@ -96,7 +96,7 @@ export const fetchAIPrediction = async ({
   return response.data;
 };
 
-// ── v2 (Multi-Lottery Engine) ────────────────────────────────────────────────
+// === v2 (Multi-Lottery Engine) ===
 
 /**
  * Fetch draw history for a given lottery type (lao | thai) with pagination.
@@ -140,4 +140,3 @@ export const deleteLotteryResult = async (id) => {
 };
 
 export default api;
-

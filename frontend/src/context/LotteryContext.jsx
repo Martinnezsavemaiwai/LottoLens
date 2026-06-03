@@ -10,7 +10,7 @@ const LotteryContext = createContext({
 });
 
 export function LotteryProvider({ children }) {
-  const [lotteryType, setLotteryType] = useState("lao"); // Default: Lao mode
+  const [lotteryType, setLotteryType] = useState("lao");
   return (
     <LotteryContext.Provider value={{ lotteryType, setLotteryType }}>
       {children}
@@ -18,7 +18,7 @@ export function LotteryProvider({ children }) {
   );
 }
 
-/** Convenience hook */
+/** Convenience hook for using the LotteryContext */
 export function useLottery() {
   return useContext(LotteryContext);
 }
