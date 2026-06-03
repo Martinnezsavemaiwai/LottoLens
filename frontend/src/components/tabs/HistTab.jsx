@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { fmtTH } from "../../utils/helpers";
+import { formatThaiDate, getFriendlyErrorMessage } from "../../utils/helpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { syncDraws, postLotteryResult, deleteLotteryResult } from "../../services/api";
 import { useLottery } from "../../context/LotteryContext";
@@ -25,7 +25,7 @@ const currentYearBE = currentYearCE + 543;
 const YEARS_BE = Array.from({ length: 15 }, (_, i) => String(currentYearBE - i));
 
 /**
- * Tab: HistTab — เพิ่มผลหวยงวดใหม่ + แสดงตาราง history ทั้งหมด
+ * Tab: HistTab — Add new lottery draws and display historical draws table
  * @param {{ history: Array }} props
  */
 export default function HistTab({ history }) {
@@ -131,7 +131,7 @@ export default function HistTab({ history }) {
       showToast("ดึงข้อมูลล่าสุดเรียบร้อยแล้ว!", "success");
     },
     onError: (err) => {
-      showToast("ดึงข้อมูลล้มเหลว: " + (err.response?.data?.details || err.message), "error");
+      showToast("ดึงข้อมูลล้มเหลว: " + getFriendlyErrorMessage(err), "error");
     }
   });
 
@@ -149,7 +149,7 @@ export default function HistTab({ history }) {
       showToast("บันทึกผลรางวัลเรียบร้อยแล้ว!", "success");
     },
     onError: (err) => {
-      showToast("เกิดข้อผิดพลาดในการบันทึก: " + (err.response?.data?.details || err.message), "error");
+      showToast("เกิดข้อผิดพลาดในการบันทึก: " + getFriendlyErrorMessage(err), "error");
     }
   });
 
@@ -162,7 +162,7 @@ export default function HistTab({ history }) {
       showToast("ลบข้อมูลผลรางวัลเรียบร้อยแล้ว!", "success");
     },
     onError: (err) => {
-      showToast("เกิดข้อผิดพลาดในการลบ: " + (err.response?.data?.details || err.message), "error");
+      showToast("เกิดข้อผิดพลาดในการลบ: " + getFriendlyErrorMessage(err), "error");
     }
   });
 
@@ -419,7 +419,7 @@ export default function HistTab({ history }) {
                       <tr key={row.id || i}>
                         <td style={{color:"var(--txt3)"}}>{(currentPage - 1) * itemsPerPage + i + 1}</td>
                         <td style={{color:"var(--txt3)", fontSize:11}}>{row.year}</td>
-                        <td style={{color:"var(--txt3)", fontSize:11}}>{fmtTH(row.dateTH || row.date)}</td>
+                        <td style={{color:"var(--txt3)", fontSize:11}}>{formatThaiDate(row.dateTH || row.date)}</td>
                         <td style={{fontFamily:"Cinzel,serif", fontSize:16, color:"var(--lao-accent2)", letterSpacing:2, fontWeight:700}}>{row.tail4}</td>
                         <td style={{fontFamily:"Chakra Petch,sans-serif", fontSize:13, color:"var(--green)", letterSpacing:1}}>{row.top3}</td>
                         <td style={{fontFamily:"Chakra Petch,sans-serif", fontSize:13, color:"var(--blue)", letterSpacing:1}}>{row.top2}</td>
@@ -453,7 +453,7 @@ export default function HistTab({ history }) {
                                 setConfirmDelete({
                                   show: true,
                                   id: row.id,
-                                  dateStr: fmtTH(row.dateTH || row.date)
+                                  dateStr: formatThaiDate(row.dateTH || row.date)
                                 });
                               }}
                               disabled={deleteMutation.isPending}
@@ -493,7 +493,7 @@ export default function HistTab({ history }) {
                       <tr key={row.id || i}>
                         <td style={{color:"var(--txt3)"}}>{(currentPage - 1) * itemsPerPage + i + 1}</td>
                         <td style={{color:"var(--txt3)",fontSize:11}}>{row.year}</td>
-                        <td style={{color:"var(--txt3)",fontSize:11}}>{fmtTH(row.dateTH)}</td>
+                        <td style={{color:"var(--txt3)",fontSize:11}}>{formatThaiDate(row.dateTH)}</td>
                         <td style={{fontFamily:"Chakra Petch,sans-serif",fontSize:13,color:"var(--gold3)",letterSpacing:2}}>{row.first}</td>
                         <td style={{color:"var(--green)",fontFamily:"Chakra Petch,sans-serif",fontSize:12,letterSpacing:1}}>
                           {(row.front3 || []).join(" / ")}

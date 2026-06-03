@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 /**
- * Tab: Analytics — สถิติ Positional, Hot/Cold, Pattern งวด 1 vs 16
+ * Tab: Analytics — Positional, Hot/Cold, Pattern (1st vs 16th) statistics
  * @param {{ stats: Object, history: Array }} props
  */
 export default function Analytics({ stats: localStats, history }) {

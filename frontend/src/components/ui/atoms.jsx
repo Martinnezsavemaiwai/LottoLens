@@ -1,11 +1,10 @@
 /**
  * Shared reusable UI atoms — CTip, DBall
- * แยกออกมาเป็น .jsx เพราะมี JSX syntax
  * @module components/ui/atoms
  */
 
 /**
- * Custom Recharts Tooltip
+ * Custom Recharts Tooltip Component
  */
 export function CTip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -20,7 +19,7 @@ export function CTip({ active, payload, label }) {
 }
 
 /**
- * Digit Ball — แสดงตัวเลขรูปวงกลมสีต่างๆ
+ * Digit Ball Component — displays numbers inside colored circles
  */
 export function DBall({ d, cls, count, label }) {
   return (

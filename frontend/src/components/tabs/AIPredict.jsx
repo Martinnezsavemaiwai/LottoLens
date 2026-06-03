@@ -1,13 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { callGemini } from "../../services/gemini";
 import { fetchAIContext } from "../../services/api";
-import { getNextDraw, getNextLaoDraw, parseJson } from "../../utils/helpers";
+import { getNextDraw, getNextLaoDraw } from "../../utils/helpers";
 import { useLottery } from "../../context/LotteryContext";
 import Skeleton from "../ui/Skeleton";
-import { Bot, Shield, Target, TrendingUp, AlertTriangle, MessageSquare, Search, Sparkles, Check, Award, BarChart3 } from "lucide-react";
+import { 
+  Bot, Shield, Target, TrendingUp, AlertTriangle, MessageSquare, Search, 
+  Sparkles, Check, Award, BarChart3, Sliders, Play
+} from "lucide-react";
+import { 
+  calculateUnifiedAIPredict, 
+  runHistoricalBacktest, 
+  getDigitLength,
+  getActualNumberForDraw
+} from "../../utils/predictEngine";
 
 /**
- * Tab: AIPredict — วิเคราะห์หวยด้วย Gemini AI
+ * Tab: AIPredict — Lottery analysis using mathematical architecture and AI
  * @param {{ history: Array, stats: Object }} props
  */
 export default function AIPredict({ history, stats }) {
@@ -20,11 +30,58 @@ export default function AIPredict({ history, stats }) {
   const [freeLoad, setFreeLoad] = useState(false);
   const [aiContext, setAiContext] = useState(null);
 
-  // Sync default prizeMode when lotteryType switches
+  // Collapsible Panels Toggle States
+  const [showTuner, setShowTuner] = useState(false);
+  const [showBacktest, setShowBacktest] = useState(false);
+
+  // AI Hyperparameters (Weights Ratio)
+  const [weightPos, setWeightPos] = useState(25);
+  const [weightRec, setWeightRec] = useState(25);
+  const [weightMarkov, setWeightMarkov] = useState(30);
+  const [weightCooc, setWeightCooc] = useState(20);
+
+  // Structural Constraint Filters
+  const [filterOddEven, setFilterOddEven] = useState(true);
+  const [filterHighLow, setFilterHighLow] = useState(true);
+  const [blockConsecutive, setBlockConsecutive] = useState(false);
+
+  // Backtester States
+  const [backtestDepth, setBacktestDepth] = useState(10);
+  const [backtestLoading, setBacktestLoading] = useState(false);
+  const [backtestResult, setBacktestResult] = useState(null);
+
+  // Sync default prizeMode and reset all states when lotteryType switches
   useEffect(() => {
     setPrizeMode(lotteryType === "lao" ? "tail4" : "back2");
+    
+    // Clear prediction & backtest states
     setResult(null);
+    setBacktestResult(null);
+    setBacktestLoading(false);
+    
+    // Clear Q&A input and response
+    setQuestion("");
+    setFreeResp("");
+    setFreeLoad(false);
     setAiContext(null);
+    
+    // Reset panels
+    setShowTuner(false);
+    setShowBacktest(false);
+    
+    // Reset hyperparameters to defaults
+    setWeightPos(25);
+    setWeightRec(25);
+    setWeightMarkov(30);
+    setWeightCooc(20);
+    
+    // Reset constraint filters
+    setFilterOddEven(true);
+    setFilterHighLow(true);
+    setBlockConsecutive(false);
+    
+    // Reset backtest depth
+    setBacktestDepth(10);
   }, [lotteryType]);
 
   const nextDraw = lotteryType === "lao" ? getNextLaoDraw() : getNextDraw();
@@ -45,121 +102,147 @@ export default function AIPredict({ history, stats }) {
   const PRIZE_META = lotteryType === "lao" ? LAO_PRIZE_META : THAI_PRIZE_META;
   const meta = PRIZE_META[prizeMode] || { label: "วิเคราะห์", digits: 2, color: "var(--accent)", icon: Target, desc: "" };
 
-  function buildFallback(mc, customLogic) {
-    const primary = meta.digits === 6 ? ["123456", "654321"] : meta.digits === 4 ? ["1122", "3344"] : meta.digits === 3 ? ["111", "222"] : ["11", "22"];
-    return {
-      confidence: 50,
-      core: "?",
-      primary,
-      backup: meta.digits === 6 ? ["999999"] : ["55", "77"],
-      methods: ["Fallback Pattern"],
-      logic: customLogic || "ไม่สามารถประมวลผลข้อมูลสถิติได้ในขณะนี้",
-    };
-  }
-
+  /**
+   * Run client-side mathematical prediction model (UnifiedAIPredict)
+   */
   async function handlePredict() {
-    setLoading(true); setResult(null);
+    setLoading(true); 
+    setResult(null);
+    // Add artificial delay to give realistic processing feedback in the UI
+    await new Promise(r => setTimeout(r, 1500));
+
     try {
-      let contextStr = "";
-      let rawStatsObj = null;
+      const config = {
+        weightPos,
+        weightRec,
+        weightMarkov,
+        weightCooc,
+        filterOddEven,
+        filterHighLow,
+        blockConsecutive,
+      };
 
-      if (lotteryType === "lao") {
-        // Lao Mode: Construct rich mathematical context on client side from our mathEngine
-        const posFreqMap = stats
-          ? (prizeMode === "tail4" ? stats.tail4PosFreq : prizeMode === "top3" ? stats.top3PosFreq : prizeMode === "top2" ? stats.top2PosFreq : stats.bot2PosFreq)
-          : [];
+      const predResult = calculateUnifiedAIPredict(history, prizeMode, lotteryType, config);
+      setResult(predResult);
 
-        const mappedPos = (posFreqMap || []).map(pos =>
-          pos.map((count, digit) => ({ digit, count })).sort((a, b) => b.count - a.count)
-        );
+      // Construct Real-time Analytics Context for the bottom strip display
+      const len = getDigitLength(prizeMode, lotteryType);
+      const seq = history
+        .map(row => getActualNumberForDraw(row, prizeMode, lotteryType))
+        .filter(Boolean)
+        .map(s => String(s).padStart(len, "0"));
 
-        rawStatsObj = {
-          Positional: mappedPos,
-          LastNum: history[0]?.tail4 || "N/A",
-          HotDigits: stats?.hot.map(h => h.d) || [],
-          ColdDigits: stats?.cold.map(c => c.d) || [],
-          Overdue: stats?.overdue.map(o => o.d) || [],
-        };
+      const posFreqs = Array.from({ length: len }, () => Array(10).fill(0));
+      seq.forEach(numStr => {
+        numStr.split("").forEach((char, p) => {
+          const digit = Number(char);
+          if (!isNaN(digit)) posFreqs[p][digit]++;
+        });
+      });
 
-        contextStr = `Lao Lottery Advanced Mathematical Stats:
-- Total analyzed draws: ${history.length}
-- Last draw tail4 number: ${rawStatsObj.LastNum}
-- Hot active digits (Highest freq): ${rawStatsObj.HotDigits.join(", ")}
-- Cold active digits (Lowest freq): ${rawStatsObj.ColdDigits.join(", ")}
-- Overdue digits (Max gap): ${rawStatsObj.Overdue.join(", ")}
-- Position Frequency breakdown: ${JSON.stringify(mappedPos)}`;
+      const mappedPos = posFreqs.map(pos =>
+        pos.map((count, digit) => ({ digit, count })).sort((a, b) => b.count - a.count)
+      );
 
-        if (stats?.zScores) {
-          contextStr += `\n- Digit Z-Scores (strictly scoped to Lao fields, higher score indicates hotter digit): ${stats.zScores.map(z => `Digit ${z.digit}: ${z.z_score.toFixed(2)}`).join(", ")}`;
+      const posTransitions = Array.from({ length: len }, () =>
+        Array.from({ length: 10 }, () => Array(10).fill(0))
+      );
+      for (let i = 0; i < seq.length - 1; i++) {
+        const currentDigs = seq[i].split("").map(Number);
+        const prevDigs = seq[i + 1].split("").map(Number);
+        for (let p = 0; p < len; p++) {
+          const fromDigit = prevDigs[p];
+          const toDigit = currentDigs[p];
+          if (fromDigit !== undefined && toDigit !== undefined) {
+            posTransitions[p][fromDigit][toDigit]++;
+          }
         }
-
-        setAiContext(rawStatsObj);
-      } else {
-        // Thai Mode: Call standard v1 backend context endpoint
-        const resp = await fetchAIContext(prizeMode);
-        rawStatsObj = resp.raw_stats;
-        contextStr = resp.context;
-        setAiContext(resp.raw_stats);
       }
 
-      const prompt = lotteryType === "lao"
-        ? `คุณเป็น Senior Data Scientist วิเคราะห์หวยพัฒนาของประเทศลาวด้วยสถิติขั้นสูง
-
-งวดเป้าหมาย: หวยลาวงวดถัดไป | โหมด: ${meta.label} (${meta.digits} หลัก)
-ฐานข้อมูล: ${history.length} งวด
-
-── Mathematical Analysis Context (Go Stats Engine) ──
-${contextStr}
-
-กระบวนการวิเคราะห์:
-1. Positional Probability — วิเคราะห์หลักที่มีความน่าจะเป็นสูงสุด
-2. Markov Transition — วิเคราะห์เลขที่มักจะออกต่อจากงวดล่าสุด
-3. Z-score reversion — วิเคราะห์เลขที่ขาดหายไปนาน (Overdue)
-4. Recency weighting — ให้ความสำคัญกับงวดล่าสุดมากกว่า
-
-ตอบเป็น JSON เท่านั้น โดยค่า core ต้องเป็นตัวเดียวกับ primary ชุดแรก:
-{"confidence":<50-80>,"core":"<${meta.digits}หลัก ตัวเดียวกับ primary ชุดแรก>","primary":["<${meta.digits}หลัก ตัวเดียวกับ core>","<${meta.digits}หลัก>","<${meta.digits}หลัก>","<${meta.digits}หลัก>"],"backup":["<${meta.digits}หลัก>","<${meta.digits}หลัก>"],"methods":["วิธี1","วิธี2","วิธี3"],"logic":"<อธิบาย 3-4 ประโยค อ้างอิงค่าสถิติจริง ห้ามมี markdown หรือ backticks>"}`
-        : `คุณเป็น Senior Data Scientist วิเคราะห์หวยรัฐบาลไทยด้วยสถิติขั้นสูง
-
-งวดเป้าหมาย: ${nextDraw} | โหมด: ${meta.label} (${meta.digits} หลัก)
-ฐานข้อมูล: ${history.length} งวด
-
-── Mathematical Analysis Context (ClickHouse) ──
-${contextStr}
-
-กระบวนการวิเคราะห์:
-1. Positional Probability — วิเคราะห์หลักที่มีความน่าจะเป็นสูงสุด
-2. Markov Transition — วิเคราะห์เลขที่มักจะออกต่อจากงวดล่าสุด
-3. Z-score reversion — วิเคราะห์เลขที่ขาดหายไปนาน (Overdue)
-4. Recency weighting — ให้ความสำคัญกับงวดล่าสุดมากกว่า
-
-ตอบเป็น JSON เท่านั้น โดยค่า core ต้องเป็นตัวเดียวกับ primary ชุดแรก:
-{"confidence":<50-80>,"core":"<${meta.digits}หลัก ตัวเดียวกับ primary ชุดแรก>","primary":["<${meta.digits}หลัก ตัวเดียวกับ core>","<${meta.digits}หลัก>","<${meta.digits}หลัก>","<${meta.digits}หลัก>"],"backup":["<${meta.digits}หลัก>","<${meta.digits}หลัก>"],"methods":["วิธี1","วิธี2","วิธี3"],"logic":"<อธิบาย 3-4 ประโยค อ้างอิงค่าสถิติจริง ห้ามมี markdown หรือ backticks>"}`;
-
-      const aiResp = await callGemini(prompt, "ตอบ JSON เท่านั้น ไม่มี markdown ไม่มี backtick");
-
-      if (aiResp && typeof aiResp === 'object' && aiResp.error) {
-        setResult(buildFallback(null, aiResp.message));
-        setLoading(false);
-        return;
+      const lastNumStr = seq[0] || "";
+      const markovPreds = [];
+      if (lastNumStr) {
+        for (let p = 0; p < len; p++) {
+          const fromDigit = Number(lastNumStr[p]);
+          if (!isNaN(fromDigit)) {
+            const transitions = posTransitions[p][fromDigit];
+            const maxTrans = Math.max(...transitions);
+            const topDigit = transitions.indexOf(maxTrans);
+            markovPreds.push({ next_number: `${p + 1}:${topDigit}` });
+          }
+        }
       }
 
-      const parsed = parseJson(aiResp);
-      if (parsed?.primary?.length > 0) {
-        // Force sync between core and primary #1 to avoid user confusion
-        parsed.core = parsed.primary[0];
-      }
-      setResult(parsed?.primary ? parsed : buildFallback());
+      setAiContext({
+        Positional: mappedPos,
+        Markov: markovPreds,
+        LastNum: lastNumStr || "N/A",
+      });
+
     } catch (err) {
       console.error("Predict Error:", err);
-      setResult(buildFallback());
+      // Fallback response
+      setResult({
+        confidence: 50,
+        core: "0".repeat(meta.digits),
+        primary: ["0".repeat(meta.digits)],
+        backup: ["0".repeat(meta.digits)],
+        methods: ["Fallback Mode"],
+        logic: "เกิดข้อผิดพลาดในการคำนวณสถิติ กรุณาลองปรับค่าน้ำหนักอีกครั้ง",
+      });
     }
     setLoading(false);
   }
 
+  /**
+   * Run historical simulation for the simulator panel
+   */
+  async function handleRunBacktest() {
+    setBacktestLoading(true);
+    setBacktestResult(null);
+    await new Promise(r => setTimeout(r, 1200));
+
+    try {
+      const config = {
+        weightPos,
+        weightRec,
+        weightMarkov,
+        weightCooc,
+        filterOddEven,
+        filterHighLow,
+        blockConsecutive,
+      };
+
+      const res = runHistoricalBacktest(history, prizeMode, lotteryType, config, backtestDepth);
+
+      let runningHits = 0;
+      const chartData = res.details.slice().reverse().map((d, index) => {
+        if (d.isHit) runningHits++;
+        const cumulativeRate = Math.round((runningHits / (index + 1)) * 100);
+        return {
+          index: index + 1,
+          cumulativeRate,
+        };
+      });
+
+      setBacktestResult({
+        ...res,
+        chartData,
+      });
+
+    } catch (err) {
+      console.error("Backtest Error:", err);
+    }
+    setBacktestLoading(false);
+  }
+
+  /**
+   * Custom AI Question helper
+   */
   async function handleFree() {
     if (!question.trim()) return;
-    setFreeLoad(true); setFreeResp("");
+    setFreeLoad(true); 
+    setFreeResp("");
     try {
       let contextStr = "";
       if (lotteryType === "lao") {
@@ -188,7 +271,9 @@ ${contextStr}
       } else {
         setFreeResp(aiResp || "ไม่ได้รับคำตอบจากระบบ กรุณาลองใหม่");
       }
-    } catch { setFreeResp("เกิดข้อผิดพลาด กรุณาลองใหม่"); }
+    } catch { 
+      setFreeResp("เกิดข้อผิดพลาด กรุณาลองใหม่"); 
+    }
     setFreeLoad(false);
   }
 
@@ -221,7 +306,7 @@ ${contextStr}
             {lotteryType === "lao" ? "Lao Lottery AI Predictor" : "Thai Lottery AI Predictor"}
           </div>
           <p style={{ fontSize: 11, color: "var(--txt3)", margin: "0 auto 16px", maxWidth: 480 }}>
-            Positional Entropy · Markov Chain · Z-score · Recency Weighting · pattern analysis · Probability Matrix
+            UnifiedAIPredict Engine · Multi-Model Voting · Positional Freq · Recency Gap · Markov Chain · Co-occurrence Matrix
           </p>
 
           {/* Prize mode selector */}
@@ -233,7 +318,7 @@ ${contextStr}
                 return (
                   <div key={k} className={`mode-card${prizeMode === k ? " on" : ""}`}
                     style={{ minWidth: 100, borderColor: prizeMode === k ? m.color : "var(--bdr2)" }}
-                    onClick={() => { setPrizeMode(k); setResult(null); }}>
+                    onClick={() => { setPrizeMode(k); setResult(null); setBacktestResult(null); }}>
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 6, marginTop: 4 }}>
                       <IconComponent size={22} style={{ color: prizeMode === k ? m.color : "var(--txt3)" }} />
                     </div>
@@ -249,7 +334,7 @@ ${contextStr}
 
           <div style={{ fontSize: 11, color: "#ef9a9a", marginBottom: 12, display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <AlertTriangle size={14} />
-            <span>วิเคราะห์เชิงสถิติ — ไม่รับประกันผล</span>
+            <span>วิเคราะห์เชิงสถิติขั้นสูง — เป็นเพียงแนวทางความน่าจะเป็นเท่านั้น</span>
           </div>
           <div style={{ fontSize: 11, color: "var(--txt3)", marginBottom: 14 }}>
             งวดเป้าหมาย: <strong style={{ color: "var(--accent2)" }}>{nextDraw}</strong>
@@ -261,23 +346,140 @@ ${contextStr}
             {loading ? (
               <>
                 <Sparkles size={14} className="spin" />
-                <span>ประมวลผล {meta.label}...</span>
+                <span>กำลังคำนวณสถิติ {meta.label}...</span>
               </>
             ) : (
               <>
                 <Sparkles size={14} />
-                <span>วิเคราะห์ {meta.label}</span>
+                <span>รันโมเดลทำนาย {meta.label}</span>
               </>
             )}
           </button>
         </div>
       </div>
 
+      {/* Advanced Hyperparameter Tuner Panel */}
+      <div className="card mt" style={{ border: "1px solid var(--bdr)" }}>
+        <div 
+          className="ctitle" 
+          style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", margin: 0, paddingBottom: showTuner ? 12 : 0, borderBottom: showTuner ? "1px solid var(--bdr2)" : "none", userSelect: "none" }}
+          onClick={() => setShowTuner(!showTuner)}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Sliders size={16} style={{ color: "var(--accent)" }} />
+            <span>Advanced Hyperparameter Tuner</span>
+            <span className="csub">({weightPos}% Pos, {weightRec}% Rec, {weightMarkov}% Mar, {weightCooc}% Cooc)</span>
+          </div>
+          <span style={{ fontSize: 10, color: "var(--txt3)" }}>{showTuner ? "▲ ซ่อนแผงตั้งค่า" : "▼ เปิดแผงตั้งค่า"}</span>
+        </div>
+
+        {showTuner && (
+          <div className="fade mt" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontSize: 11, color: "var(--txt3)", lineHeight: 1.5 }}>
+              ปรับแต่งสัดส่วนน้ำหนัก (Weights Ratio) ของแต่ละโมเดลการคำนวณและตัวกรองเชิงโครงสร้าง เพื่อวิเคราะห์ตัวเลขเด่นตามสูตรของคุณ
+            </div>
+
+            <div className="grid-res sm:grid-cols-2" style={{ gap: 16 }}>
+              {/* Sliders */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                    <span style={{ color: "var(--txt2)" }}>Positional Weight (ความถี่หลักสถิติ)</span>
+                    <span style={{ color: "var(--gold)" }}>{weightPos}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={weightPos} 
+                    onChange={e => setWeightPos(Number(e.target.value))}
+                    style={{ width: "100%", accentColor: "var(--accent)" }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                    <span style={{ color: "var(--txt2)" }}>Recency Weight (น้ำหนักช่วงงวด / Gap)</span>
+                    <span style={{ color: "var(--cyan)" }}>{weightRec}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={weightRec} 
+                    onChange={e => setWeightRec(Number(e.target.value))}
+                    style={{ width: "100%", accentColor: "var(--accent)" }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                    <span style={{ color: "var(--txt2)" }}>Markov Chain Weight (การเปลี่ยนผ่านของตัวเลข)</span>
+                    <span style={{ color: "var(--purple)" }}>{weightMarkov}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={weightMarkov} 
+                    onChange={e => setWeightMarkov(Number(e.target.value))}
+                    style={{ width: "100%", accentColor: "var(--accent)" }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                    <span style={{ color: "var(--txt2)" }}>Co-occurrence Weight (คู่ตัวเลขสัมพันธ์ร่วม)</span>
+                    <span style={{ color: "var(--green)" }}>{weightCooc}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={weightCooc} 
+                    onChange={e => setWeightCooc(Number(e.target.value))}
+                    style={{ width: "100%", accentColor: "var(--accent)" }}
+                  />
+                </div>
+              </div>
+
+              {/* Toggles */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: "bold", color: "var(--txt2)", marginBottom: 4 }}>
+                  Structural Constraint Filters (ตัวกรองโครงสร้างตัวเลขสมดุล)
+                </div>
+
+                <div className="tgl" tabIndex="0" onClick={() => setFilterOddEven(!filterOddEven)} onKeyDown={e => e.key === ' ' && setFilterOddEven(!filterOddEven)}>
+                  <div style={{ fontSize: 12, color: "var(--txt)" }}>คู่/คี่ สมดุล (Odd/Even Balance)</div>
+                  <div className={`tgl-track${filterOddEven ? " on" : ""}`}>
+                    <div className="tgl-thumb" />
+                  </div>
+                </div>
+
+                <div className="tgl" tabIndex="0" onClick={() => setFilterHighLow(!filterHighLow)} onKeyDown={e => e.key === ' ' && setFilterHighLow(!filterHighLow)}>
+                  <div style={{ fontSize: 12, color: "var(--txt)" }}>สูง/ต่ำ สมดุล (High/Low Balance)</div>
+                  <div className={`tgl-track${filterHighLow ? " on" : ""}`}>
+                    <div className="tgl-thumb" />
+                  </div>
+                </div>
+
+                <div className="tgl" tabIndex="0" onClick={() => setBlockConsecutive(!blockConsecutive)} onKeyDown={e => e.key === ' ' && setBlockConsecutive(!blockConsecutive)}>
+                  <div style={{ fontSize: 12, color: "var(--txt)" }}>คัดกรองเลขเรียง (Block Consecutive)</div>
+                  <div className={`tgl-track${blockConsecutive ? " on" : ""}`}>
+                    <div className="tgl-thumb" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {loading && (
         <div className="card mt" style={{ textAlign: "center", padding: 28 }}>
           <Skeleton height={200} className="mb" />
           <div style={{ fontSize: 13, color: "var(--txt3)", marginTop: 10 }}>
-            กำลังรัน Markov + Positional Entropy + Z-score + Recency Weighting...
+            กำลังวิเคราะห์ข้อมูลด้วยน้ำหนักที่กำหนด กำลังประมวลผลโมเดลคณิตศาสตร์...
           </div>
         </div>
       )}
@@ -300,7 +502,7 @@ ${contextStr}
               <div className="card" style={{ textAlign: "center" }}>
                 <div className="ctitle" style={{ justifyContent: "center", gap: "6px" }}>
                   <Target size={14} style={{ color: "var(--accent)" }} />
-                  <span>เลขเด่น (Core)</span>
+                  <span>เลขเด่นหลัก (Core)</span>
                 </div>
                 <div style={{
                   width: 80, height: 80, borderRadius: "50%",
@@ -315,7 +517,7 @@ ${contextStr}
                 }}>
                   {result.core}
                 </div>
-                <div style={{ fontSize: 10, color: "var(--txt3)" }}>Highest positional score</div>
+                <div style={{ fontSize: 10, color: "var(--txt3)" }}>Highest calculated ensemble score</div>
               </div>
 
               <div className="card" style={{ textAlign: "center" }}>
@@ -401,7 +603,7 @@ ${contextStr}
           <div className="card" style={{ marginTop: 0 }}>
             <div className="ctitle" style={{ gap: "6px" }}>
               <Target size={14} style={{ color: "var(--accent)" }} />
-              <span>กระบวนการวิเคราะห์ที่ใช้ (Real-time Analytics Context)</span>
+              <span>ดัชนีผลลัพธ์โมเดลแบบเวลาจริง (Real-time Analytics Context)</span>
             </div>
             {aiContext ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -430,17 +632,168 @@ ${contextStr}
                 </div>
               </div>
             ) : (
-              <div style={{ fontSize: 11, color: "var(--txt3)", textAlign: "center", padding: 10 }}>กดวิเคราะห์เพื่อดึงข้อมูลสถิติสดแบบ Real-time</div>
+              <div style={{ fontSize: 11, color: "var(--txt3)", textAlign: "center", padding: 10 }}>กดวิเคราะห์เพื่อคำนวณค่าน้ำหนักสถิติจริงแบบ Real-time</div>
             )}
           </div>
         </div>
       )}
 
-      {/* Free Q&A */}
+      {/* Historical Backtesting Simulator Panel */}
+      <div className="card mt" style={{ border: "1px solid var(--bdr)" }}>
+        <div 
+          className="ctitle" 
+          style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", margin: 0, paddingBottom: showBacktest ? 12 : 0, borderBottom: showBacktest ? "1px solid var(--bdr2)" : "none", userSelect: "none" }}
+          onClick={() => setShowBacktest(!showBacktest)}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Play size={16} style={{ color: "var(--accent)" }} />
+            <span>Historical Backtesting Simulator</span>
+            {backtestResult && (
+              <span className="tag" style={{ border: "none", padding: "1px 6px", background: "rgba(34,197,94,0.15)", color: "var(--green)" }}>
+                Hit Rate: {backtestResult.hitRate}%
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: 10, color: "var(--txt3)" }}>{showBacktest ? "▲ ซ่อนแผงจำลอง" : "▼ เปิดแผงจำลอง"}</span>
+        </div>
+
+        {showBacktest && (
+          <div className="fade mt" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontSize: 11, color: "var(--txt3)", lineHeight: 1.5 }}>
+              รันแบบจำลองการทำนายย้อนหลังตามจำนวนงวดจริง เพื่อวัดความถูกต้องของค่าน้ำหนักและ Constraints ที่คุณตั้งค่าไว้ โดยระบบจะถือว่าถูกรางวัล (HIT) เมื่อเลขรางวัลจริงอยู่ในรายชื่อ 4 เลขทำนายหลัก (Primary)
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, color: "var(--txt2)" }}>ทดสอบย้อนหลัง:</span>
+                <select 
+                  value={backtestDepth} 
+                  onChange={e => setBacktestDepth(Number(e.target.value))}
+                  className="inp" 
+                  style={{ width: 100, padding: "6px 10px", fontSize: 13, minHeight: 34 }}
+                >
+                  <option value={10}>10 งวด</option>
+                  <option value={20}>20 งวด</option>
+                  <option value={30}>30 งวด</option>
+                  <option value={50}>50 งวด</option>
+                </select>
+              </div>
+
+              <button 
+                className="btn btn-g" 
+                onClick={handleRunBacktest} 
+                disabled={backtestLoading}
+                style={{ padding: "6px 16px", minHeight: 34, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}
+              >
+                {backtestLoading ? (
+                  <>
+                    <Sparkles size={12} className="spin" />
+                    <span>กำลังจำลอง...</span>
+                  </>
+                ) : (
+                  <>
+                    <Play size={12} />
+                    <span>เริ่มการทดสอบ</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {backtestResult && (
+              <div className="fade" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="grid-res sm:grid-cols-3" style={{ gap: 14 }}>
+                  <div className="sbox">
+                    <div className="sv" style={{ color: backtestResult.hitRate >= 40 ? "var(--green)" : backtestResult.hitRate >= 20 ? "var(--gold)" : "var(--red)" }}>
+                      {backtestResult.hitRate}%
+                    </div>
+                    <div className="sl">อัตราความถูกต้อง (Hit Rate)</div>
+                  </div>
+                  
+                  <div className="sbox">
+                    <div className="sv">{backtestResult.hits} / {backtestResult.total}</div>
+                    <div className="sl">จำลองถูกรางวัล (Hits)</div>
+                  </div>
+
+                  <div className="sbox">
+                    <div className="sv">{history.length} งวด</div>
+                    <div className="sl">ฐานข้อมูลย้อนหลัง</div>
+                  </div>
+                </div>
+
+                {/* Line Chart showing accuracy trend */}
+                <div className="sbox" style={{ padding: "16px 8px", height: 200 }}>
+                  <div style={{ fontSize: 10, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, textAlign: "left", paddingLeft: 8 }}>
+                    แนวโน้มอัตราการเข้าเป้าสะสม (Cumulative Hit Rate Trend)
+                  </div>
+                  <ResponsiveContainer width="100%" height="90%">
+                    <LineChart data={backtestResult.chartData}>
+                      <XAxis dataKey="index" stroke="var(--txt3)" fontSize={9} tickLine={false} />
+                      <YAxis hide={true} domain={[0, 110]} />
+                      <Tooltip 
+                        contentStyle={{ background: "var(--s1)", borderColor: "var(--bdr)", borderRadius: 8, fontSize: 11 }}
+                        labelFormatter={(lbl) => `งวดที่ทดสอบ ${lbl}`}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="cumulativeRate" 
+                        stroke="var(--accent)" 
+                        strokeWidth={2.5} 
+                        dot={{ fill: "var(--accent)", r: 3 }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Draw logs */}
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--gold)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+                    บันทึกผลจำลองรายงวด (Backtest Log Breakdown)
+                  </div>
+                  <div className="tbl-wrap" style={{ maxHeight: 220 }}>
+                    <table className="tbl">
+                      <thead>
+                        <tr>
+                          <th>งวดวันที่</th>
+                          <th>รางวัลจริง</th>
+                          <th>ตัวทำนายเด่นหลัก (Primary Group)</th>
+                          <th>ผลวิเคราะห์</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {backtestResult.details.map((d, i) => (
+                          <tr key={i}>
+                            <td>{d.date}</td>
+                            <td style={{ fontFamily: "Chakra Petch", fontWeight: "bold", fontSize: 14, color: "var(--txt)" }}>{d.actual}</td>
+                            <td style={{ fontSize: 11, color: "var(--txt3)", letterSpacing: 1.5 }}>{d.predicted}</td>
+                            <td>
+                              {d.isHit ? (
+                                <span style={{ color: "var(--green)", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: "bold", fontSize: 11 }}>
+                                  ✓ HIT (เข้าเป้า)
+                                </span>
+                              ) : (
+                                <span style={{ color: "var(--txt3)", opacity: 0.6, fontSize: 11 }}>
+                                  ✗ MISS (ไม่เข้า)
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Free Q&A Section */}
       <div className="card mt">
         <div className="ctitle" style={{ gap: "6px" }}>
           <MessageSquare size={14} style={{ color: "var(--accent)" }} />
-          <span>ถาม AI อิสระ</span>
+          <span>ถาม AI วิเคราะห์สถิติอิสระ</span>
         </div>
         <div className="fchips" style={{ marginBottom: 10 }}>
           {QUICK.map((q, i) => (
@@ -464,18 +817,152 @@ ${contextStr}
           </button>
         </div>
         {(freeResp || freeLoad) && (
-          <div className={`ai-resp${freeLoad ? " loading" : ""}`} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <div 
+            className={`ai-resp${freeLoad ? " loading" : ""}`} 
+            style={freeLoad ? { display: "flex", gap: "6px", alignItems: "center" } : { display: "block" }}
+          >
             {freeLoad ? (
               <>
                 <Sparkles size={14} className="spin" style={{ color: "var(--accent)" }} />
-                <span>กำลังวิเคราะห์...</span>
+                <span>กำลังส่งคำถามถึง AI...</span>
               </>
             ) : (
-              freeResp
+              renderMarkdown(freeResp)
             )}
           </div>
         )}
       </div>
     </div>
   );
+}
+
+/**
+ * Helper to parse inline markdown (bold **text** and code `text`) into JSX elements
+ */
+function parseInlineMarkup(text) {
+  if (!text) return [];
+  const regex = /(\*\*.*?\*\*|`.*?`)/g;
+  const parts = text.split(regex);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index} style={{ color: "var(--accent3)", fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code key={index} style={{ 
+          background: "rgba(255,255,255,0.08)", 
+          padding: "2px 6px", 
+          borderRadius: 4, 
+          fontFamily: "monospace",
+          fontSize: "0.9em",
+          color: "var(--gold)"
+        }}>
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+}
+
+/**
+ * Helper to render basic markdown structures beautifully inside React
+ */
+function renderMarkdown(text) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  const renderedElements = [];
+  
+  lines.forEach((line, index) => {
+    // Empty lines act as paragraph spacers
+    if (!line.trim()) {
+      renderedElements.push(<div key={`empty-${index}`} style={{ height: "10px" }} />);
+      return;
+    }
+
+    // Check for headers (e.g. ### Header)
+    const headerMatch = line.match(/^(#{1,6})\s+(.*)/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = headerMatch[2];
+      const fontSize = level === 1 ? "1.4rem" : level === 2 ? "1.2rem" : "1.05rem";
+      renderedElements.push(
+        <div key={`h-${index}`} style={{ 
+          fontWeight: 800, 
+          fontSize, 
+          marginTop: "14px", 
+          marginBottom: "6px", 
+          color: "var(--accent3)",
+          fontFamily: "Chakra Petch, sans-serif"
+        }}>
+          {parseInlineMarkup(content)}
+        </div>
+      );
+      return;
+    }
+
+    // Check for bullet list items starting with *, -, or bullet characters
+    const listMatch = line.match(/^(\s*)([*•-]\s+)(.*)/);
+    if (listMatch) {
+      const indent = listMatch[1].length;
+      const content = listMatch[3];
+      const paddingLeft = indent > 0 ? `${indent * 8 + 14}px` : "14px";
+      renderedElements.push(
+        <div key={`li-${index}`} style={{ 
+          paddingLeft, 
+          position: "relative", 
+          marginBottom: "6px",
+          lineHeight: "1.65",
+          color: "var(--txt2)"
+        }}>
+          <span style={{ 
+            position: "absolute", 
+            left: indent > 0 ? `${indent * 8}px` : "0px", 
+            color: "var(--accent)",
+            fontWeight: "bold"
+          }}>•</span>
+          {parseInlineMarkup(content)}
+        </div>
+      );
+      return;
+    }
+
+    // Check for numbered list items: e.g. "1. **Bold:** text"
+    const numListMatch = line.match(/^(\s*)(\d+\.\s+)(.*)/);
+    if (numListMatch) {
+      const indent = numListMatch[1].length;
+      const marker = numListMatch[2];
+      const content = numListMatch[3];
+      const paddingLeft = indent > 0 ? `${indent * 8 + 20}px` : "20px";
+      renderedElements.push(
+        <div key={`nli-${index}`} style={{ 
+          paddingLeft, 
+          position: "relative", 
+          marginBottom: "6px",
+          lineHeight: "1.65",
+          color: "var(--txt2)"
+        }}>
+          <span style={{ 
+            position: "absolute", 
+            left: indent > 0 ? `${indent * 8}px` : "0px", 
+            color: "var(--accent)",
+            fontFamily: "Chakra Petch, sans-serif",
+            fontSize: "0.95em",
+            fontWeight: 600
+          }}>{marker}</span>
+          {parseInlineMarkup(content)}
+        </div>
+      );
+      return;
+    }
+
+    // Regular paragraph line
+    renderedElements.push(
+      <p key={`p-${index}`} style={{ margin: "0 0 8px 0", lineHeight: "1.65", color: "var(--txt)" }}>
+        {parseInlineMarkup(line)}
+      </p>
+    );
+  });
+
+  return <div style={{ display: "flex", flexDirection: "column" }}>{renderedElements}</div>;
 }

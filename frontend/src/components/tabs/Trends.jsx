@@ -3,12 +3,12 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis,
   Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-import { fmtTH, CTip } from "../../utils/helpers";
+import { formatThaiDate, CTip } from "../../utils/helpers";
 import { useLottery } from "../../context/LotteryContext";
 import { BarChart3, TrendingUp, Award, Clock, Shield } from "lucide-react";
 
 /**
- * Tab: Trends — Distribution chart, ติดตามรายตัวเลข, Combo Score, Timeline
+ * Tab: Trends — Distribution chart, digit tracking, Combo Score, Timeline
  * @param {{ stats: Object, history: Array }} props
  */
 export default function Trends({ stats, history }) {
@@ -37,7 +37,7 @@ export default function Trends({ stats, history }) {
       if (prizeView==="first")  seq = row.first || "";
     }
     const dateStr = row.dateISO || row.date || "";
-    return { date: fmtTH(dateStr).slice(0,7), count: seq.split("").filter(d=>d===sel).length };
+    return { date: formatThaiDate(dateStr).slice(0,7), count: seq.split("").filter(d=>d===sel).length };
   });
 
   return (
@@ -147,7 +147,7 @@ export default function Trends({ stats, history }) {
                   {history.slice(0,40).map((row,i)=>(
                     <tr key={i}>
                       <td style={{color:"var(--txt3)"}}>{i+1}</td>
-                      <td style={{color:"var(--txt3)",fontSize:11}}>{fmtTH(row.dateISO || row.date)}</td>
+                      <td style={{color:"var(--txt3)",fontSize:11}}>{formatThaiDate(row.dateISO || row.date)}</td>
                       <td style={{fontFamily:"Cinzel,serif",fontSize:16,color:"var(--lao-accent2)",letterSpacing:2,fontWeight:700}}>{row.tail4}</td>
                       <td style={{fontFamily:"Chakra Petch,sans-serif",fontSize:13,color:"var(--green)",letterSpacing:1}}>{row.top3}</td>
                       <td style={{fontFamily:"Chakra Petch,sans-serif",fontSize:13,color:"var(--blue)",letterSpacing:1}}>{row.top2}</td>
@@ -170,7 +170,7 @@ export default function Trends({ stats, history }) {
                   {history.slice(0,40).map((row,i)=>(
                     <tr key={i}>
                       <td style={{color:"var(--txt3)"}}>{i+1}</td>
-                      <td style={{color:"var(--txt3)",fontSize:11}}>{fmtTH(row.dateTH)}</td>
+                      <td style={{color:"var(--txt3)",fontSize:11}}>{formatThaiDate(row.dateTH)}</td>
                       <td style={{fontFamily:"Chakra Petch,sans-serif",fontSize:13,color:"var(--gold3)",letterSpacing:2}}>{row.first}</td>
                       <td style={{color:"var(--green)",fontFamily:"Chakra Petch,sans-serif",fontSize:12}}>
                         {(row.front3 || []).join(" / ")}

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import "./config/theme.css";
 import { getStats, getLaoStats } from "./utils/mathEngine";
 import { fetchLotteryHistory, fetchLotteryStats } from "./services/api";
-import { fmtTH, mapBackendDraw, mapBackendLaoDraw } from "./utils/helpers";
+import { formatThaiDate, mapBackendDraw, mapBackendLaoDraw } from "./utils/helpers";
 import { HISTORY } from "./data/history";
 import { LAO_HISTORY } from "./data/laoHistory";
 import Loading from "./components/common/Loading";
@@ -141,7 +141,7 @@ export default function App() {
                 // Lao Draw Header Display
                 <>
                   <div className="prize-pill lao-prize-pill">
-                    <div className="prize-lbl">งวด {fmtTH(last.dateTH || last.date)}</div>
+                    <div className="prize-lbl">งวด {formatThaiDate(last.dateTH || last.date)}</div>
                     <div className="prize-num first" style={{color:"var(--lao-accent2)"}}>{last.tail4}</div>
                   </div>
                   <div className="prize-pill lao-prize-pill">
@@ -161,7 +161,7 @@ export default function App() {
                 // Thai Draw Header Display
                 <>
                   <div className="prize-pill">
-                    <div className="prize-lbl">งวด {fmtTH(last.dateTH)}</div>
+                    <div className="prize-lbl">งวด {formatThaiDate(last.dateTH)}</div>
                     <div className="prize-num first">{last.first}</div>
                   </div>
                   <div className="prize-pill">
