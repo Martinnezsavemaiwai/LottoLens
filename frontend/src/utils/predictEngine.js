@@ -270,8 +270,8 @@ export function calculateUnifiedAIPredict(history, mode, lotteryType, config) {
   scoredCandidates.sort((a, b) => b.score - a.score);
 
   const core = scoredCandidates[0]?.number || "0".repeat(len);
-  const primary = scoredCandidates.slice(0, 4).map(x => x.number);
-  const backup = scoredCandidates.slice(4, 6).map(x => x.number);
+  const primary = scoredCandidates.slice(0, 1).map(x => x.number);
+  const backup = scoredCandidates.slice(1, 2).map(x => x.number);
 
   // Dynamic Confidence formulation based on score profile
   const baseConf = 55;
