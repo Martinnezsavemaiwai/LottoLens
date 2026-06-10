@@ -19,6 +19,10 @@ import (
 // Derivation: tail4=full[2:], top3=full[3:], top2=full[4:], bottom2=full[2:4]
 var realData = []services.LaoSeedEntry{
 	// มิ.ย. - พ.ค. 2569
+	{Date: "2026-06-09", Full: "165245", Verified: true},
+	{Date: "2026-06-08", Full: "348526", Verified: true},
+	{Date: "2026-06-05", Full: "052469", Verified: true},
+	{Date: "2026-06-04", Full: "593026", Verified: true},
 	{Date: "2026-06-03", Full: "390549", Verified: true},
 	{Date: "2026-06-02", Full: "963211", Verified: true},
 	{Date: "2026-06-01", Full: "587788", Verified: true},
