@@ -263,7 +263,8 @@ ${contextStr}
 
       const aiResp = await callGemini(
         prompt,
-        `คุณเป็น Senior Data Scientist เชี่ยวชาญสถิติหวย${lotteryType === "lao" ? "ลาว" : "ไทย"} ตอบภาษาไทย กระชับ ตรงประเด็น`
+        `คุณเป็น Senior Data Scientist เชี่ยวชาญสถิติหวย${lotteryType === "lao" ? "ลาว" : "ไทย"} ตอบภาษาไทย กระชับ ตรงประเด็น`,
+        { skipContext: true }
       );
 
       if (aiResp && typeof aiResp === 'object' && aiResp.error) {

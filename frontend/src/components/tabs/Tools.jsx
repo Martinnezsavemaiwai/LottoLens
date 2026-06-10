@@ -91,7 +91,7 @@ export default function Tools({ stats, history }) {
     const lotteryName = isLao ? "หวยลาวพัฒนา" : "หวยรัฐบาลไทย";
     const prompt = `ตีความฝันและหาเลขมงคล${lotteryName}: "${dream}" ตอบ JSON: {"meaning":"ความหมายของฝัน","lucky2":"เลข2หลัก","lucky3":"เลข3หลัก","lucky4":"เลข4หลัก","reason":"เหตุผลสั้นๆ"}`;
     try {
-      const text = await callGemini(prompt, "ตอบ JSON เท่านั้น");
+      const text = await callGemini(prompt, "ตอบ JSON เท่านั้น", { skipContext: true });
       if (text && typeof text === 'object' && text.error) {
         setDreamNote(text.message);
         setGenerated(null);
@@ -146,7 +146,7 @@ Top2ล่าง=${back2Top3}, Top3ล่าง=${back3Top3}
     }
 
     try {
-      const text = await callGemini(prompt, "ตอบ JSON เท่านั้น");
+      const text = await callGemini(prompt, "ตอบ JSON เท่านั้น", { skipContext: true });
       if (text && typeof text === 'object' && text.error) {
         setEvalData({
           score: 0,

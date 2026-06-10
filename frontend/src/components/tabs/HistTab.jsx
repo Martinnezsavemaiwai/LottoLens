@@ -3,7 +3,8 @@ import { formatThaiDate, getFriendlyErrorMessage } from "../../utils/helpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { syncDraws, postLotteryResult, deleteLotteryResult } from "../../services/api";
 import { useLottery } from "../../context/LotteryContext";
-import { Plus, RefreshCw, Loader2, Save, Ruler, ClipboardList, ChevronLeft, ChevronRight, Search, Trash2, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { Plus, RefreshCw, Loader2, Save, Ruler, ClipboardList, ChevronLeft, ChevronRight, Search, Trash2, CheckCircle, AlertCircle, Info, Lock } from "lucide-react";
 
 const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1));
 const MONTHS = [
@@ -31,6 +32,7 @@ const YEARS_BE = Array.from({ length: 15 }, (_, i) => String(currentYearBE - i))
 export default function HistTab({ history }) {
   const { lotteryType } = useLottery();
   const queryClient = useQueryClient();
+  const { user, setShowAuthModal } = useAuth();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -202,7 +204,41 @@ export default function HistTab({ history }) {
   return (
     <div className="fade">
       {/* ── Add Result Card ── */}
-      <div className="card mt">
+      <div className="card mt" style={{ position: "relative", overflow: "hidden" }}>
+        {/* Lock Overlay for Unauthenticated Users */}
+        {!user && (
+          <div 
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(18, 18, 18, 0.7)",
+              backdropFilter: "blur(4px)",
+              zIndex: 10,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              padding: "20px",
+              textAlign: "center"
+            }}
+          >
+            <Lock size={28} style={{ color: "var(--accent2)" }} />
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--txt)" }}>
+              กรุณาเข้าสู่ระบบด้วยบัญชี Admin เพื่อจัดการข้อมูลและอัปเดตผลรางวัล
+            </div>
+            <button 
+              className="btn btn-g" 
+              onClick={() => setShowAuthModal(true)}
+              style={{ fontSize: "12px", padding: "8px 20px", height: "auto", minHeight: "unset" }}
+            >
+              เข้าสู่ระบบตอนนี้
+            </button>
+          </div>
+        )}
         <div className="ctitle" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <Plus size={16} style={{ color: "var(--accent)" }} />
@@ -456,7 +492,8 @@ export default function HistTab({ history }) {
                                   dateStr: formatThaiDate(row.dateTH || row.date)
                                 });
                               }}
-                              disabled={deleteMutation.isPending}
+                              disabled={deleteMutation.isPending || !user}
+                              title={!user ? "กรุณาเข้าสู่ระบบเพื่อดำเนินการ" : ""}
                             >
                               <Trash2 size={12} />
                               <span>ลบ</span>
