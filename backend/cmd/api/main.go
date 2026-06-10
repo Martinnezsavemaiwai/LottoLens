@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"time"
@@ -239,6 +240,21 @@ func main() {
 		ctx := context.Background()
 		if err := lottoService.AutoSeed(ctx); err != nil {
 			slog.Error("Auto-seed check failed", "error", err)
+		}
+	}()
+
+	// 5.1 Auto-Seed default admin user if not exists
+	go func() {
+		ctx := context.Background()
+		_, err := authService.Register(ctx, "admin@lottolens.com", "admin1234")
+		if err != nil {
+			if errors.Is(err, services.ErrUserExists) {
+				slog.Info("Default admin user already exists, skipping creation")
+			} else {
+				slog.Error("Failed to create default admin user", "error", err)
+			}
+		} else {
+			slog.Info("Default admin user created successfully: admin@lottolens.com / admin1234")
 		}
 	}()
 

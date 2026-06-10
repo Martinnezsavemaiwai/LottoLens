@@ -43,6 +43,7 @@ func (h *AIHandler) Predict(c *fiber.Ctx) error {
 		Limit             int    `json:"limit"`
 		Prompt            string `json:"prompt"`
 		SystemInstruction string `json:"system_instruction"`
+		SkipContext       bool   `json:"skip_context"`
 	}
 	if len(c.Body()) > 0 {
 		if err := c.BodyParser(&body); err != nil {
@@ -61,8 +62,11 @@ func (h *AIHandler) Predict(c *fiber.Ctx) error {
 	if body.SystemInstruction == "" {
 		body.SystemInstruction = c.Query("system_instruction", "")
 	}
+	if c.Query("skip_context") == "true" {
+		body.SkipContext = true
+	}
 
-	resp, err := h.aiService.Predict(c.Context(), body.PrizeType, body.Limit, body.Prompt, body.SystemInstruction)
+	resp, err := h.aiService.Predict(c.Context(), body.PrizeType, body.Limit, body.Prompt, body.SystemInstruction, body.SkipContext)
 	if err != nil {
 		status := fiber.StatusBadRequest
 		if strings.Contains(err.Error(), "GEMINI_API_KEY") {

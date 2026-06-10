@@ -23,8 +23,34 @@ const attachAuthToken = (config) => {
   return config;
 };
 
+const handleAuthError = (error) => {
+  if (error.response && error.response.status === 401) {
+    window.dispatchEvent(new Event('lottolens:unauthorized'));
+  }
+  return Promise.reject(error);
+};
+
 api.interceptors.request.use(attachAuthToken);
 apiV2.interceptors.request.use(attachAuthToken);
+
+api.interceptors.response.use(
+  (response) => response,
+  handleAuthError
+);
+apiV2.interceptors.response.use(
+  (response) => response,
+  handleAuthError
+);
+
+export const login = async (email, password) => {
+  const response = await api.post('/auth/login', { email, password });
+  return response.data;
+};
+
+export const register = async (email, password) => {
+  const response = await api.post('/auth/register', { email, password });
+  return response.data;
+};
 
 // === v1 (Thai lottery) ===
 
@@ -86,12 +112,14 @@ export const fetchAIPrediction = async ({
   limit = 4,
   prompt,
   systemInstruction,
+  skipContext = false,
 } = {}) => {
   const response = await api.post('/ai/predict', {
     prize_type: prizeType,
     limit,
     prompt,
     system_instruction: systemInstruction,
+    skip_context: skipContext,
   });
   return response.data;
 };

@@ -11,13 +11,15 @@ import Skeleton from "./components/ui/Skeleton";
 import LotterySwitcher from "./components/common/LotterySwitcher";
 import { useLottery } from "./context/LotteryContext";
 import { useTheme } from "./context/ThemeContext";
+import { useAuth } from "./context/AuthContext";
 import Analytics from "./components/tabs/Analytics";
 import Trends    from "./components/tabs/Trends";
 import AIPredict from "./components/tabs/AIPredict";
 import Tools     from "./components/tabs/Tools";
 import HistTab   from "./components/tabs/HistTab";
+import AuthModal from "./components/common/AuthModal";
 
-import { BarChart3, TrendingUp, Bot, Dices, History, AlertTriangle, Sun, Moon } from "lucide-react";
+import { BarChart3, TrendingUp, Bot, Dices, History, AlertTriangle, Sun, Moon, LogIn, User } from "lucide-react";
 
 const TABS = [
   { id:"analytics", label:"สถิติ", icon: BarChart3 },
@@ -31,6 +33,7 @@ export default function App() {
   const [tab, setTab] = useState("analytics");
   const { lotteryType } = useLottery();
   const { theme, toggleTheme } = useTheme();
+  const { user, setShowAuthModal, logout } = useAuth();
 
   // 1. Fetch History (Draws) dynamically based on active lotteryType
   const { 
@@ -208,6 +211,74 @@ export default function App() {
             })}
           </nav>
 
+          {/* User Auth Section */}
+          <div className="auth-header-sec" style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+            {user ? (
+              <div 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "8px", 
+                  background: "rgba(255,255,255,0.04)", 
+                  border: "1px solid var(--bdr2)", 
+                  borderRadius: "20px", 
+                  padding: "4px 12px",
+                  height: "36px"
+                }}
+              >
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--green)" }} />
+                <span 
+                  style={{ 
+                    fontSize: "11px", 
+                    color: "var(--txt2)", 
+                    maxWidth: "100px", 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap",
+                    fontWeight: 500
+                  }} 
+                  title={user.email}
+                >
+                  {user.email.split("@")[0]}
+                </span>
+                <button 
+                  onClick={logout}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#ef5350",
+                    fontSize: "11px",
+                    cursor: "pointer",
+                    padding: "0 0 0 8px",
+                    borderLeft: "1px solid var(--bdr2)",
+                    fontWeight: 600
+                  }}
+                >
+                  ออก
+                </button>
+              </div>
+            ) : (
+              <button 
+                className="btn btn-b" 
+                onClick={() => setShowAuthModal(true)}
+                style={{
+                  fontSize: "11px",
+                  padding: "0 14px",
+                  height: "36px",
+                  minHeight: "unset",
+                  borderRadius: "18px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontWeight: 600
+                }}
+              >
+                <LogIn size={12} />
+                <span>เข้าสู่ระบบ</span>
+              </button>
+            )}
+          </div>
+
           {/* Theme Toggle Button */}
           <button 
             className="theme-btn" 
@@ -261,6 +332,9 @@ export default function App() {
           </>
         )}
       </main>
+      
+      {/* Authentication Modal Dialog */}
+      <AuthModal />
     </div>
   );
 }

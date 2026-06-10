@@ -20,16 +20,20 @@ import (
 // ── Mock AIService ────────────────────────────────────────────────────────────
 
 type mockAIService struct {
-	contextResult    *services.AIResponse
-	contextErr       error
-	predictResult    *services.AIPredictionResponse
-	predictErr       error
+	contextResult       *services.AIResponse
+	contextErr          error
+	predictResult       *services.AIPredictionResponse
+	predictErr          error
+	capturedSkipContext bool
+	capturedPrompt      string
 }
 
 func (m *mockAIService) GenerateMathContext(_ context.Context, _ string) (*services.AIResponse, error) {
 	return m.contextResult, m.contextErr
 }
-func (m *mockAIService) Predict(_ context.Context, _ string, _ int, _, _ string) (*services.AIPredictionResponse, error) {
+func (m *mockAIService) Predict(_ context.Context, _ string, _ int, prompt, _ string, skipContext bool) (*services.AIPredictionResponse, error) {
+	m.capturedSkipContext = skipContext
+	m.capturedPrompt = prompt
 	return m.predictResult, m.predictErr
 }
 
@@ -204,4 +208,45 @@ func TestPredict_POST_InvalidBody(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestPredict_SkipContext_POST(t *testing.T) {
+	svc := &mockAIService{
+		predictResult: &services.AIPredictionResponse{
+			Prediction: `{"primary":["88"]}`,
+			Model:      "gemini-2.0-flash",
+		},
+	}
+	app := newAITestApp(svc)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"prompt":       "dream of elephant",
+		"skip_context": true,
+	})
+	req := httptest.NewRequest("POST", "/ai/predict", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req, 5000)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.True(t, svc.capturedSkipContext)
+	assert.Equal(t, "dream of elephant", svc.capturedPrompt)
+}
+
+func TestPredict_SkipContext_GET(t *testing.T) {
+	svc := &mockAIService{
+		predictResult: &services.AIPredictionResponse{
+			Prediction: `{"primary":["88"]}`,
+			Model:      "gemini-2.0-flash",
+		},
+	}
+	app := newAITestApp(svc)
+
+	req := httptest.NewRequest("GET", "/ai/predict?prompt=dream+of+elephant&skip_context=true", nil)
+	resp, err := app.Test(req, 5000)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.True(t, svc.capturedSkipContext)
+	assert.Equal(t, "dream of elephant", svc.capturedPrompt)
 }

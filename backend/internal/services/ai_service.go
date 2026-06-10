@@ -22,7 +22,7 @@ type AIResponse struct {
 
 type AIService interface {
 	GenerateMathContext(ctx context.Context, prizeType string) (*AIResponse, error)
-	Predict(ctx context.Context, prizeType string, limit int, promptOverride, systemInstruction string) (*AIPredictionResponse, error)
+	Predict(ctx context.Context, prizeType string, limit int, promptOverride, systemInstruction string, skipContext bool) (*AIPredictionResponse, error)
 }
 
 type aiService struct {
@@ -162,36 +162,43 @@ func (s *aiService) GenerateMathContext(ctx context.Context, prizeType string) (
 	}, nil
 }
 
-func (s *aiService) Predict(ctx context.Context, prizeType string, limit int, promptOverride, systemInstruction string) (*AIPredictionResponse, error) {
-	if prizeType != "back2" && prizeType != "first" {
-		return nil, errors.New("prize_type must be either back2 or first")
-	}
-	if limit <= 0 {
-		limit = 4
-	}
-	if limit > 10 {
-		limit = 10
-	}
-
+func (s *aiService) Predict(ctx context.Context, prizeType string, limit int, promptOverride, systemInstruction string, skipContext bool) (*AIPredictionResponse, error) {
 	apiKey := strings.TrimSpace(os.Getenv("GEMINI_API_KEY"))
 	if apiKey == "" {
 		return nil, errors.New("GEMINI_API_KEY is not configured")
 	}
 
-	contextResp, err := s.GenerateMathContext(ctx, prizeType)
-	if err != nil {
-		return nil, err
-	}
+	var prompt string
+	if skipContext {
+		if strings.TrimSpace(promptOverride) == "" {
+			return nil, errors.New("prompt is required when skip_context is true")
+		}
+		prompt = promptOverride
+	} else {
+		if prizeType != "back2" && prizeType != "first" {
+			return nil, errors.New("prize_type must be either back2 or first")
+		}
+		if limit <= 0 {
+			limit = 4
+		}
+		if limit > 10 {
+			limit = 10
+		}
 
-	prompt := fmt.Sprintf(`Use the statistical context to produce a cautious lottery analysis.
+		contextResp, err := s.GenerateMathContext(ctx, prizeType)
+		if err != nil {
+			return nil, err
+		}
+
+		prompt = fmt.Sprintf(`Use the statistical context to produce a cautious lottery analysis.
 Prize type: %s
 Prediction limit: %d
 
 %s
 
 Return concise JSON text only with suggested numbers, confidence, methods, and reasoning. Do not include markdown.`, prizeType, limit, contextResp.Context)
-	if strings.TrimSpace(promptOverride) != "" {
-		prompt = fmt.Sprintf(`Use the statistical context below to answer the user's request.
+		if strings.TrimSpace(promptOverride) != "" {
+			prompt = fmt.Sprintf(`Use the statistical context below to answer the user's request.
 Prize type: %s
 Prediction limit: %d
 
@@ -199,6 +206,7 @@ Prediction limit: %d
 
 User request:
 %s`, prizeType, limit, contextResp.Context, promptOverride)
+		}
 	}
 
 	models := []string{"gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"}

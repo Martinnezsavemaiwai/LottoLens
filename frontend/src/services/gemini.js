@@ -17,6 +17,7 @@ export async function callGemini(prompt, systemInstruction, options = {}) {
       limit: options.limit || 4,
       prompt,
       systemInstruction: systemInstruction || DEFAULT_SYSTEM,
+      skipContext: options.skipContext || false,
     });
     return response.prediction;
   } catch (error) {
