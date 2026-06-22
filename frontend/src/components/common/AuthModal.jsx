@@ -183,9 +183,9 @@ export default function AuthModal() {
         {error && (
           <div 
             style={{
-              background: "rgba(239, 83, 80, 0.1)",
-              border: "1px solid rgba(239, 83, 80, 0.25)",
-              color: "#ef5350",
+              background: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid var(--red)",
+              color: "var(--red)",
               borderRadius: "10px",
               padding: "10px 14px",
               fontSize: "12px",

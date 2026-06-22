@@ -171,20 +171,20 @@ export default function Analytics({ stats: localStats, history }) {
     <div className="fade">
       {/* Overview */}
       <div className="grid-res grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt">
-        <div className="sbox">
+        <div className="sbox" style={{ background: "rgba(255, 255, 255, 0.01)" }}>
           <div className="sv">{stats ? history.length : <Skeleton width={60} height={28} className="mx-auto" />}</div>
           <div className="sl">งวดทั้งหมด</div>
         </div>
-        <div className="sbox">
-          <div className="sv" style={{ color: "var(--accent)", fontSize: 18 }}>
+        <div className="sbox" style={{ border: "1px solid rgba(239, 68, 68, 0.25)", background: "linear-gradient(180deg, var(--s2), rgba(239, 68, 68, 0.03))" }}>
+          <div className="sv" style={{ color: "#ef5350", fontSize: 18 }}>
             {stats ? stats.hot.map(h => h.d).join(" · ") : <Skeleton width={100} height={24} className="mx-auto" />}
           </div>
           <div className="sl" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            <Flame size={12} style={{ color: "var(--accent)" }} />
+            <Flame size={12} style={{ color: "#ef5350" }} />
             <span>Hot Digits</span>
           </div>
         </div>
-        <div className="sbox">
+        <div className="sbox" style={{ border: "1px solid rgba(59, 130, 246, 0.2)", background: "linear-gradient(180deg, var(--s2), rgba(59, 130, 246, 0.02))" }}>
           <div className="sv" style={{ color: "var(--blue)", fontSize: 18 }}>
             {stats ? stats.cold.map(c => c.d).join(" · ") : <Skeleton width={100} height={24} className="mx-auto" />}
           </div>
@@ -193,12 +193,12 @@ export default function Analytics({ stats: localStats, history }) {
             <span>Cold Digits</span>
           </div>
         </div>
-        <div className="sbox">
-          <div className="sv" style={{ fontSize: 18 }}>
+        <div className="sbox" style={{ border: `1px solid ${lotteryType === 'lao' ? 'rgba(167, 139, 250, 0.3)' : 'rgba(201, 149, 42, 0.3)'}`, background: `linear-gradient(180deg, var(--s2), ${lotteryType === 'lao' ? 'rgba(167, 139, 250, 0.04)' : 'rgba(201, 149, 42, 0.04)'})` }}>
+          <div className="sv" style={{ fontSize: 18, color: "var(--accent2)" }}>
             {stats ? stats.combo.slice(0, 3).map(c => c.n).join(" · ") : <Skeleton width={120} height={24} className="mx-auto" />}
           </div>
           <div className="sl" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            <Award size={12} style={{ color: "var(--gold)" }} />
+            <Award size={12} style={{ color: "var(--accent)" }} />
             <span>Top เลขเด่นที่ออกบ่อย</span>
           </div>
         </div>
@@ -602,7 +602,7 @@ export default function Analytics({ stats: localStats, history }) {
             <div className="card">
               <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                 <Link2 size={14} style={{ color: "var(--accent)" }} />
-                <span>เลขท้าย 3 ตัว — Top 12</span> 
+                <span>เลขท้าย 3 ตัว (Top 12)</span> 
                 <span className="pb-back3 prize-badge">เลขท้าย 3 ตัว</span>
               </div>
               <div className="chips mt">
@@ -616,7 +616,7 @@ export default function Analytics({ stats: localStats, history }) {
             <div className="card">
               <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                 <Link2 size={14} style={{ color: "var(--green)" }} />
-                <span>เลขหน้า 3 ตัว — Top 12</span> 
+                <span>เลขหน้า 3 ตัว (Top 12)</span> 
                 <span className="pb-front3 prize-badge">เลขหน้า 3 ตัว</span>
               </div>
               <div className="chips mt">

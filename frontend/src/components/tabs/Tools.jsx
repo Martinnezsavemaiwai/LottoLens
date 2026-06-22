@@ -101,7 +101,7 @@ export default function Tools({ stats, history }) {
       }
       const p = parseJson(text);
       if (p) {
-        setDreamNote(`${p.meaning}${p.reason ? ` — ${p.reason}` : ""}`);
+        setDreamNote(`${p.meaning}${p.reason ? ` (${p.reason})` : ""}`);
         let luckyNum;
         if (digits === 4) luckyNum = p.lucky4 || p.lucky3 || p.lucky2 || "??";
         else if (digits === 3) luckyNum = p.lucky3 || p.lucky2 || "??";
@@ -262,7 +262,7 @@ Top2ล่าง=${back2Top3}, Top3ล่าง=${back3Top3}
           <div className="card">
             <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <BarChart3 size={16} style={{ color: "var(--accent)" }} />
-              <span>AI Scorer — ประเมินชุดเลข</span>
+              <span>AI Scorer (ประเมินชุดเลข)</span>
             </div>
             <div className="fchips" style={{marginBottom:10}}>
               {PRIZE_TYPES.map(([k,l])=>(
@@ -387,8 +387,16 @@ Top2ล่าง=${back2Top3}, Top3ล่าง=${back3Top3}
         <div className="grid-res grid-cols-2 lg:grid-cols-4" style={{gap:10}}>
           {quickRefData.map((x,i)=>{
             const Icon = x.icon;
+            // Mode-aware visual colors to break identical cards pattern
+            const cardStyles = {
+              "var(--red)": { borderColor: "rgba(239, 68, 68, 0.25)", background: "linear-gradient(180deg, var(--s2), rgba(239, 68, 68, 0.03))" },
+              "var(--blue)": { borderColor: "rgba(59, 130, 246, 0.25)", background: "linear-gradient(180deg, var(--s2), rgba(59, 130, 246, 0.02))" },
+              "var(--gold2)": { borderColor: "rgba(240, 180, 41, 0.3)", background: "linear-gradient(180deg, var(--s2), rgba(240, 180, 41, 0.04))" },
+              "var(--accent)": { borderColor: isLao ? "rgba(167, 139, 250, 0.3)" : "rgba(201, 149, 42, 0.3)", background: `linear-gradient(180deg, var(--s2), ${isLao ? 'rgba(167, 139, 250, 0.04)' : 'rgba(201, 149, 42, 0.04)'})` }
+            };
+            const customStyle = cardStyles[x.c] || {};
             return (
-              <div key={i} className="sbox">
+              <div key={i} className="sbox" style={customStyle}>
                 <div style={{fontSize:10,color:x.c,letterSpacing:1,textTransform:"uppercase",marginBottom:6, display: "inline-flex", alignItems: "center", gap: "4px"}}>
                   <Icon size={10} style={{ color: x.c }} />
                   <span>{x.label}</span>

@@ -45,7 +45,7 @@ export default function Trends({ stats, history }) {
       <div className="card mt">
         <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
           <BarChart3 size={16} style={{ color: "var(--accent)" }} />
-          <span>Distribution — ความถี่ตัวเลข 0-9</span>
+          <span>Distribution (ความถี่ตัวเลข 0-9)</span>
         </div>
         <div style={{height:200}}>
           <ResponsiveContainer width="100%" height="100%">
@@ -56,7 +56,7 @@ export default function Trends({ stats, history }) {
               <Bar dataKey="count" name="ครั้ง" radius={[5,5,0,0]}>
                 {distData.map(item => {
                   const n = Number(item.label);
-                  const color = stats.hotSet.has(n)?"#ef5350":stats.coldSet.has(n)?"var(--blue)":"var(--gold)";
+                  const color = stats.hotSet.has(n)?"var(--red)":stats.coldSet.has(n)?"var(--blue)":"var(--gold)";
                   return <Cell key={item.label} fill={color}/>;
                 })}
               </Bar>
@@ -64,8 +64,8 @@ export default function Trends({ stats, history }) {
           </ResponsiveContainer>
         </div>
         <div className="fchips mt" style={{fontSize:10,gap:10, display: "inline-flex", alignItems: "center"}}>
-          <span style={{color:"#ef5350", display: "inline-flex", alignItems: "center", gap: "4px"}}>
-            <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#ef5350" }} /> Hot
+          <span style={{color:"var(--red)", display: "inline-flex", alignItems: "center", gap: "4px"}}>
+            <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--red)" }} /> Hot
           </span>
           <span style={{color:"var(--gold)", display: "inline-flex", alignItems: "center", gap: "4px"}}>
             <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--gold)" }} /> Normal
@@ -113,7 +113,7 @@ export default function Trends({ stats, history }) {
       <div className="card">
         <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
           <Award size={16} style={{ color: "var(--accent)" }} />
-          <span>Combo Score — เลขท้าย {lotteryType === "lao" ? "2 ตัว" : "2 ตัว"}</span>
+          <span>Combo Score: เลขท้าย {lotteryType === "lao" ? "2 ตัว" : "2 ตัว"}</span>
           <span className="csub">= ความถี่(40%) + ระยะห่าง(30%) + โมเมนตัม(30%)</span>
         </div>
         <div className="chips">

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import "./config/theme.css";
 import { getStats, getLaoStats } from "./utils/mathEngine";
@@ -34,6 +34,15 @@ export default function App() {
   const { lotteryType } = useLottery();
   const { theme, toggleTheme } = useTheme();
   const { user, setShowAuthModal, logout } = useAuth();
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
+  // Auto-reset logout confirmation state after 3 seconds of inactivity
+  useEffect(() => {
+    if (confirmLogout) {
+      const timer = setTimeout(() => setConfirmLogout(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [confirmLogout]);
 
   // 1. Fetch History (Draws) dynamically based on active lotteryType
   const { 
@@ -242,19 +251,27 @@ export default function App() {
                   {user.email.split("@")[0]}
                 </span>
                 <button 
-                  onClick={logout}
+                  onClick={() => {
+                    if (confirmLogout) {
+                      logout();
+                      setConfirmLogout(false);
+                    } else {
+                      setConfirmLogout(true);
+                    }
+                  }}
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "#ef5350",
+                    color: confirmLogout ? "#ff8a80" : "var(--red)",
                     fontSize: "11px",
                     cursor: "pointer",
                     padding: "0 0 0 8px",
                     borderLeft: "1px solid var(--bdr2)",
-                    fontWeight: 600
+                    fontWeight: 600,
+                    transition: "color 0.2s"
                   }}
                 >
-                  ออก
+                  {confirmLogout ? "ยืนยันออก?" : "ออก"}
                 </button>
               </div>
             ) : (

@@ -335,7 +335,7 @@ ${contextStr}
 
           <div style={{ fontSize: 11, color: "#ef9a9a", marginBottom: 12, display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <AlertTriangle size={14} />
-            <span>วิเคราะห์เชิงสถิติขั้นสูง — เป็นเพียงแนวทางความน่าจะเป็นเท่านั้น</span>
+            <span>วิเคราะห์เชิงสถิติขั้นสูง (เป็นเพียงแนวทางความน่าจะเป็นเท่านั้น)</span>
           </div>
           <div style={{ fontSize: 11, color: "var(--txt3)", marginBottom: 14 }}>
             งวดเป้าหมาย: <strong style={{ color: "var(--accent2)" }}>{nextDraw}</strong>
@@ -368,16 +368,34 @@ ${contextStr}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Sliders size={16} style={{ color: "var(--accent)" }} />
-            <span>Advanced Hyperparameter Tuner</span>
-            <span className="csub">({weightPos}% Pos, {weightRec}% Rec, {weightMarkov}% Mar, {weightCooc}% Cooc)</span>
+            <span>ตัวปรับแต่งน้ำหนักความน่าจะเป็น (Weights Tuner)</span>
+            <span className="csub">({weightPos}% สถิติ, {weightRec}% ช่วงงวด, {weightMarkov}% มาร์คอฟ, {weightCooc}% เลขคู่)</span>
           </div>
           <span style={{ fontSize: 10, color: "var(--txt3)" }}>{showTuner ? "▲ ซ่อนแผงตั้งค่า" : "▼ เปิดแผงตั้งค่า"}</span>
         </div>
 
         {showTuner && (
           <div className="fade mt" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontSize: 11, color: "var(--txt3)", lineHeight: 1.5 }}>
-              ปรับแต่งสัดส่วนน้ำหนัก (Weights Ratio) ของแต่ละโมเดลการคำนวณและตัวกรองเชิงโครงสร้าง เพื่อวิเคราะห์ตัวเลขเด่นตามสูตรของคุณ
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div style={{ fontSize: 11, color: "var(--txt3)", lineHeight: 1.5 }}>
+                ปรับแต่งสัดส่วนน้ำหนัก (Weights Ratio) ของแต่ละโมเดลการคำนวณและตัวกรองเชิงโครงสร้าง เพื่อวิเคราะห์ตัวเลขเด่นตามสูตรของคุณ
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setWeightPos(25);
+                  setWeightRec(25);
+                  setWeightMarkov(30);
+                  setWeightCooc(20);
+                  setFilterOddEven(true);
+                  setFilterHighLow(true);
+                  setBlockConsecutive(false);
+                }}
+                className="fchip"
+                style={{ height: "28px", minHeight: "28px", padding: "0 10px", flexShrink: 0 }}
+              >
+                คืนค่าเริ่มต้น
+              </button>
             </div>
 
             <div className="grid-res sm:grid-cols-2" style={{ gap: 16 }}>
@@ -518,13 +536,13 @@ ${contextStr}
                 }}>
                   {result.core}
                 </div>
-                <div style={{ fontSize: 10, color: "var(--txt3)" }}>Highest calculated ensemble score</div>
+                <div style={{ fontSize: 10, color: "var(--txt3)" }}>ค่าน้ำหนักความถี่สูงสุดจากการคำนวณ</div>
               </div>
 
               <div className="card" style={{ textAlign: "center" }}>
                 <div className="ctitle" style={{ justifyContent: "center", gap: "6px" }}>
                   <TrendingUp size={14} style={{ color: "var(--accent)" }} />
-                  <span>Statistical Confidence</span>
+                  <span>ดัชนีความน่าเชื่อถือทางสถิติ</span>
                 </div>
                 <div className="ring-wrap">
                   <svg width="92" height="92">
@@ -552,7 +570,7 @@ ${contextStr}
             <div className="card">
               <div className="ctitle" style={{ gap: "6px" }}>
                 <Target size={14} style={{ color: "var(--accent)" }} />
-                <span>ชุดเลขหลัก — {meta.label} (Primary)</span>
+                <span>ชุดเลขหลัก: {meta.label} (Primary)</span>
                 <span className="prize-badge pb-back2" style={{ borderColor: meta.color, color: meta.color, background: `${meta.color}15` }}>{meta.label}</span>
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 22 }}>
@@ -593,7 +611,7 @@ ${contextStr}
               <div style={{ background: "var(--s1)", borderRadius: 11, padding: 14, border: "1px solid var(--bdr2)" }}>
                 <div style={{ fontSize: 9, color: meta.color, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 7, display: "flex", alignItems: "center", gap: "6px" }}>
                   <BarChart3 size={12} />
-                  <span>Mathematical Analysis Logic</span>
+                  <span>หลักการวิเคราะห์เชิงคณิตศาสตร์</span>
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.82, color: "var(--txt)" }}>{result.logic}</p>
               </div>
@@ -604,7 +622,7 @@ ${contextStr}
           <div className="card" style={{ marginTop: 0 }}>
             <div className="ctitle" style={{ gap: "6px" }}>
               <Target size={14} style={{ color: "var(--accent)" }} />
-              <span>ดัชนีผลลัพธ์โมเดลแบบเวลาจริง (Real-time Analytics Context)</span>
+              <span>ดัชนีวิเคราะห์สถิติจริงแบบเรียลไทม์ (Real-time Context)</span>
             </div>
             {aiContext ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -648,7 +666,7 @@ ${contextStr}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Play size={16} style={{ color: "var(--accent)" }} />
-            <span>Historical Backtesting Simulator</span>
+            <span>ระบบจำลองผลวิเคราะห์ย้อนหลัง (Backtesting Simulator)</span>
             {backtestResult && (
               <span className="tag" style={{ border: "none", padding: "1px 6px", background: "rgba(34,197,94,0.15)", color: "var(--green)" }}>
                 Hit Rate: {backtestResult.hitRate}%
