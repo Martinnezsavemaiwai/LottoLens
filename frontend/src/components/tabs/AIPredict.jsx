@@ -16,10 +16,12 @@ import {
   getActualNumberForDraw,
   ENGINE_REGISTRY,
   resolveEngineConfig,
-  computePositionalEntropy,
-  ENTROPY_THRESHOLDS,
 } from "../../utils/predictEngine";
 import { findBestWeights } from "../../utils/weightOptimizer";
+import PerformanceTrackingPanel from "../ai/PerformanceTrackingPanel";
+import EvidencePanel from "../ai/EvidencePanel";
+import EntropyPanel from "../ai/EntropyPanel";
+import { renderMarkdown } from "../ai/markdownRenderer";
 
 /**
  * Feature flag: Engine Registry version selector.
@@ -338,6 +340,14 @@ ${contextStr}
     ? result.confidence >= 72 ? "var(--green)" : result.confidence >= 60 ? "var(--accent)" : "var(--red)"
     : "var(--accent)";
 
+  const coreCircle = meta.digits <= 2
+    ? { size: 80, fontSize: 34, letterSpacing: 0 }
+    : meta.digits <= 3
+    ? { size: 80, fontSize: 26, letterSpacing: 0 }
+    : meta.digits <= 4
+    ? { size: 96, fontSize: 20, letterSpacing: 1 }
+    : { size: 128, fontSize: 15, letterSpacing: 0.5 };
+
   return (
     <div className="fade">
       <div className="ai-hero mt">
@@ -350,13 +360,13 @@ ${contextStr}
           <div style={{ fontFamily: "Playfair Display,serif", fontSize: 22, fontWeight: 900, color: "var(--accent3)", marginBottom: 6 }}>
             {lotteryType === "lao" ? "Lao Lottery AI Predictor" : "Thai Lottery AI Predictor"}
           </div>
-          <p style={{ fontSize: 11, color: "var(--txt3)", margin: "0 auto 16px", maxWidth: 480 }}>
+          <p style={{ fontSize: 12, color: "var(--txt3)", margin: "0 auto 16px", maxWidth: 480 }}>
             UnifiedAIPredict Engine · Multi-Model Voting · Positional Freq · Recency Gap · Markov Chain · Co-occurrence Matrix
           </p>
 
           {/* Prize mode selector */}
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 9, color: "var(--txt3)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>เลือกประเภทรางวัล</div>
+            <div style={{ fontSize: 12, color: "var(--txt3)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>เลือกประเภทรางวัล</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
               {Object.entries(PRIZE_META).map(([k, m]) => {
                 const IconComponent = m.icon;
@@ -370,7 +380,7 @@ ${contextStr}
                     <div style={{ fontFamily: "Chakra Petch,sans-serif", fontSize: 14, fontWeight: 700, color: prizeMode === k ? m.color : "var(--txt3)" }}>
                       {m.label}
                     </div>
-                    <div style={{ fontSize: 9, color: "var(--txt3)", marginTop: 3 }}>{m.desc}</div>
+                    <div style={{ fontSize: 12, color: "var(--txt3)", marginTop: 3 }}>{m.desc}</div>
                   </div>
                 );
               })}
@@ -404,10 +414,10 @@ ${contextStr}
                 {/* Header row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                   <Cpu size={14} style={{ color: statusColor }} aria-hidden="true" />
-                  <span style={{ fontSize: 10, fontWeight: 700, color: statusColor, letterSpacing: 1.5, textTransform: "uppercase", fontFamily: "Chakra Petch, monospace" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: statusColor, letterSpacing: 1.5, textTransform: "uppercase", fontFamily: "Chakra Petch, monospace" }}>
                     Engine Registry
                   </span>
-                  <span style={{ fontSize: 9, color: "var(--txt3)", letterSpacing: 0.5 }}>— Version Control Matrix</span>
+                  <span style={{ fontSize: 12, color: "var(--txt3)", letterSpacing: 0.5 }}>— Version Control Matrix</span>
                 </div>
 
                 {/* Dropdown + status badge row */}
@@ -415,7 +425,7 @@ ${contextStr}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <label
                       htmlFor="select-engine-version"
-                      style={{ fontSize: 11, color: "var(--txt2)", whiteSpace: "nowrap" }}
+                      style={{ fontSize: 12, color: "var(--txt2)", whiteSpace: "nowrap" }}
                     >
                       Engine Version:
                     </label>
@@ -445,7 +455,7 @@ ${contextStr}
                       background: `${statusColor}18`,
                       border: `1px solid ${statusColor}55`,
                       borderRadius: 6, padding: "3px 9px",
-                      fontSize: 10, color: statusColor, fontWeight: 700,
+                      fontSize: 12, color: statusColor, fontWeight: 700,
                       fontFamily: "Chakra Petch, monospace", letterSpacing: 1,
                     }}
                   >
@@ -455,7 +465,7 @@ ${contextStr}
                 </div>
 
                 {/* Engine description */}
-                <div style={{ marginTop: 8, fontSize: 10, color: "var(--txt3)", fontStyle: "italic" }}>
+                <div style={{ marginTop: 8, fontSize: 12, color: "var(--txt3)", fontStyle: "italic" }}>
                   {activeEngine.description}
                 </div>
 
@@ -471,14 +481,14 @@ ${contextStr}
                     display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center",
                   }}
                 >
-                  <span style={{ fontSize: 9, color: "var(--txt3)", letterSpacing: 1, textTransform: "uppercase" }}>Active Weights:</span>
+                  <span style={{ fontSize: 12, color: "var(--txt3)", letterSpacing: 1, textTransform: "uppercase" }}>Active Weights:</span>
                   {[
                     { label: "Pos",    value: resolvedCfg.weightPos,    color: "var(--gold)"   },
                     { label: "Rec",    value: resolvedCfg.weightRec,    color: "var(--cyan)"   },
                     { label: "Markov", value: resolvedCfg.weightMarkov, color: "var(--purple)" },
                     { label: "Cooc",   value: resolvedCfg.weightCooc,   color: "var(--green)"  },
                   ].map(w => (
-                    <span key={w.label} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 }}>
+                    <span key={w.label} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}>
                       <span style={{ color: w.color, fontFamily: "Chakra Petch, monospace", fontWeight: 700 }}>{w.value}%</span>
                       <span style={{ color: "var(--txt3)" }}>{w.label}</span>
                     </span>
@@ -489,11 +499,11 @@ ${contextStr}
           })()}
           {/* ── /Engine Registry Selector ─────────────────────────────────── */}
 
-          <div style={{ fontSize: 11, color: "#ef9a9a", marginBottom: 12, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ fontSize: 12, color: "#ef9a9a", marginBottom: 12, display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <AlertTriangle size={14} />
             <span>วิเคราะห์เชิงสถิติขั้นสูง (เป็นเพียงแนวทางความน่าจะเป็นเท่านั้น)</span>
           </div>
-          <div style={{ fontSize: 11, color: "var(--txt3)", marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--txt3)", marginBottom: 14 }}>
             งวดเป้าหมาย: <strong style={{ color: "var(--accent2)" }}>{nextDraw}</strong>
             &nbsp;·&nbsp;ฐานข้อมูล {history.length} งวด
           </div>
@@ -527,13 +537,13 @@ ${contextStr}
             <span>ตัวปรับแต่งน้ำหนักความน่าจะเป็น (Weights Tuner)</span>
             <span className="csub">({weightPos}% สถิติ, {weightRec}% ช่วงงวด, {weightMarkov}% มาร์คอฟ, {weightCooc}% เลขคู่)</span>
           </div>
-          <span style={{ fontSize: 10, color: "var(--txt3)" }}>{showTuner ? "▲ ซ่อนแผงตั้งค่า" : "▼ เปิดแผงตั้งค่า"}</span>
+          <span style={{ fontSize: 12, color: "var(--txt3)" }}>{showTuner ? "▲ ซ่อนแผงตั้งค่า" : "▼ เปิดแผงตั้งค่า"}</span>
         </div>
 
         {showTuner && (
           <div className="fade mt" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-              <div style={{ fontSize: 11, color: "var(--txt3)", lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: "var(--txt3)", lineHeight: 1.5 }}>
                 ปรับแต่งสัดส่วนน้ำหนัก (Weights Ratio) ของแต่ละโมเดลการคำนวณและตัวกรองเชิงโครงสร้าง เพื่อวิเคราะห์ตัวเลขเด่นตามสูตรของคุณ
               </div>
               <button 
@@ -558,7 +568,7 @@ ${contextStr}
               {/* Sliders */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
                     <span style={{ color: "var(--txt2)" }}>Positional Weight (ความถี่หลักสถิติ)</span>
                     <span style={{ color: "var(--gold)" }}>{weightPos}%</span>
                   </div>
@@ -573,7 +583,7 @@ ${contextStr}
                 </div>
 
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
                     <span style={{ color: "var(--txt2)" }}>Recency Weight (น้ำหนักช่วงงวด / Gap)</span>
                     <span style={{ color: "var(--cyan)" }}>{weightRec}%</span>
                   </div>
@@ -588,7 +598,7 @@ ${contextStr}
                 </div>
 
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
                     <span style={{ color: "var(--txt2)" }}>Markov Chain Weight (การเปลี่ยนผ่านของตัวเลข)</span>
                     <span style={{ color: "var(--purple)" }}>{weightMarkov}%</span>
                   </div>
@@ -603,7 +613,7 @@ ${contextStr}
                 </div>
 
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
                     <span style={{ color: "var(--txt2)" }}>Co-occurrence Weight (คู่ตัวเลขสัมพันธ์ร่วม)</span>
                     <span style={{ color: "var(--green)" }}>{weightCooc}%</span>
                   </div>
@@ -620,7 +630,7 @@ ${contextStr}
 
               {/* Toggles */}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: "bold", color: "var(--txt2)", marginBottom: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: "bold", color: "var(--txt2)", marginBottom: 4 }}>
                   Structural Constraint Filters (ตัวกรองโครงสร้างตัวเลขสมดุล)
                 </div>
 
@@ -664,7 +674,7 @@ ${contextStr}
           {result.methods?.length > 0 && (
             <div style={{ marginBottom: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
               {result.methods.map((m, i) => (
-                <span key={i} style={{ background: lotteryType === "lao" ? "rgba(167,139,250,0.1)" : "rgba(61,142,240,0.1)", border: lotteryType === "lao" ? "1px solid rgba(167,139,250,0.25)" : "1px solid rgba(61,142,240,0.25)", borderRadius: 6, padding: "3px 10px", fontSize: 10, color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <span key={i} style={{ background: lotteryType === "lao" ? "rgba(167,139,250,0.1)" : "rgba(61,142,240,0.1)", border: lotteryType === "lao" ? "1px solid rgba(167,139,250,0.25)" : "1px solid rgba(61,142,240,0.25)", borderRadius: 6, padding: "3px 10px", fontSize: 12, color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                   <Check size={10} />
                   <span>{m}</span>
                 </span>
@@ -680,19 +690,22 @@ ${contextStr}
                   <span>เลขเด่นหลัก (Core)</span>
                 </div>
                 <div style={{
-                  width: 80, height: 80, borderRadius: "50%",
+                  width: coreCircle.size, height: coreCircle.size, borderRadius: "50%",
                   background: `radial-gradient(circle,${meta.color}33,${meta.color}11)`,
                   border: `2.5px solid ${meta.color}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontFamily: "Chakra Petch,sans-serif",
-                  fontSize: meta.digits <= 2 ? 34 : meta.digits <= 3 ? 26 : 18,
+                  fontSize: coreCircle.fontSize,
                   fontWeight: 900, color: meta.color, margin: "0 auto 8px",
                   boxShadow: `0 0 20px ${meta.color}44`,
-                  letterSpacing: meta.digits > 3 ? 2 : 0,
+                  letterSpacing: coreCircle.letterSpacing,
+                  lineHeight: 1,
+                  boxSizing: "border-box",
+                  padding: meta.digits >= 4 ? "0 6px" : 0,
                 }}>
                   {result.core}
                 </div>
-                <div style={{ fontSize: 10, color: "var(--txt3)" }}>ค่าน้ำหนักความถี่สูงสุดจากการคำนวณ</div>
+                <div style={{ fontSize: 12, color: "var(--txt3)" }}>ค่าน้ำหนักความถี่สูงสุดจากการคำนวณ</div>
               </div>
 
               <div className="card" style={{ textAlign: "center" }}>
@@ -711,7 +724,7 @@ ${contextStr}
                   </svg>
                   <span className="ring-val" style={{ color: confColor }}>{result.confidence}%</span>
                 </div>
-                <div style={{ fontSize: 10, color: "var(--txt3)", marginTop: 6 }}>
+                <div style={{ fontSize: 12, color: "var(--txt3)", marginTop: 6 }}>
                   {result.confidence >= 72 ? (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--green)" }} /> น้ำหนักสถิติสูง</span>
                   ) : result.confidence >= 60 ? (
@@ -744,7 +757,7 @@ ${contextStr}
                     boxShadow: i === 0 ? `0 4px 16px ${meta.color}33` : "none",
                   }}>
                     {n}
-                    {i === 0 && <div style={{ position: "absolute", top: -8, right: -6, fontSize: 9, background: meta.color, color: "#000", borderRadius: 4, padding: "1px 5px", fontFamily: "sans-serif", fontWeight: 700 }}>#1</div>}
+                    {i === 0 && <div style={{ position: "absolute", top: -8, right: -6, fontSize: 12, background: meta.color, color: "#000", borderRadius: 4, padding: "1px 5px", fontFamily: "sans-serif", fontWeight: 700 }}>#1</div>}
                   </div>
                 ))}
               </div>
@@ -765,7 +778,7 @@ ${contextStr}
               </div>
 
               <div style={{ background: "var(--s1)", borderRadius: 11, padding: 14, border: "1px solid var(--bdr2)" }}>
-                <div style={{ fontSize: 9, color: meta.color, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 7, display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ fontSize: 12, color: meta.color, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 7, display: "flex", alignItems: "center", gap: "6px" }}>
                   <BarChart3 size={12} />
                   <span>หลักการวิเคราะห์เชิงคณิตศาสตร์</span>
                 </div>
@@ -786,28 +799,28 @@ ${contextStr}
                   <div key={i} style={{ background: "var(--s2)", border: "1px solid var(--bdr2)", borderRadius: 9, padding: "8px 12px", minWidth: 90 }}>
                     <div style={{ fontSize: 8, color: "var(--gold)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>หลักที่ {i + 1}</div>
                     <div style={{ fontFamily: "Chakra Petch,sans-serif", fontSize: 18, color: "var(--gold2)" }}>{pos[0]?.digit ?? "?"}</div>
-                    <div style={{ fontSize: 9, color: "var(--txt3)" }}>Freq: {pos[0]?.count ?? 0}</div>
+                    <div style={{ fontSize: 12, color: "var(--txt3)" }}>Freq: {pos[0]?.count ?? 0}</div>
                   </div>
                 ))}
                 {aiContext.Markov && (
                   <div style={{ background: "var(--s2)", border: "1px solid var(--bdr2)", borderRadius: 9, padding: "8px 12px", minWidth: 120 }}>
                     <div style={{ fontSize: 8, color: "var(--purple)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Markov Next</div>
-                    <div style={{ fontSize: 11, color: "var(--txt)" }}>{(aiContext.Markov || []).slice(0, 3).map(m => m.next_number).join(", ") || "N/A"}</div>
+                    <div style={{ fontSize: 12, color: "var(--txt)" }}>{(aiContext.Markov || []).slice(0, 3).map(m => m.next_number).join(", ") || "N/A"}</div>
                   </div>
                 )}
                 {stats?.zScores && (
                   <div style={{ background: "var(--s2)", border: "1px solid var(--bdr2)", borderRadius: 9, padding: "8px 12px", minWidth: 120 }}>
                     <div style={{ fontSize: 8, color: "var(--red)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Z-score (Top)</div>
-                    <div style={{ fontSize: 11, color: "var(--txt)" }}>{(stats.zScores || []).slice(-1).map(z => `Digit ${z.digit}: ${z.z_score.toFixed(2)}`).join("") || "N/A"}</div>
+                    <div style={{ fontSize: 12, color: "var(--txt)" }}>{(stats.zScores || []).slice(-1).map(z => `Digit ${z.digit}: ${z.z_score.toFixed(2)}`).join("") || "N/A"}</div>
                   </div>
                 )}
                 <div style={{ background: "var(--s2)", border: "1px solid var(--bdr2)", borderRadius: 9, padding: "8px 12px", minWidth: 120 }}>
                   <div style={{ fontSize: 8, color: "var(--cyan)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Last Draw</div>
-                  <div style={{ fontSize: 11, color: "var(--txt)" }}>{aiContext.LastNum || "N/A"}</div>
+                  <div style={{ fontSize: 12, color: "var(--txt)" }}>{aiContext.LastNum || "N/A"}</div>
                 </div>
               </div>
             ) : (
-              <div style={{ fontSize: 11, color: "var(--txt3)", textAlign: "center", padding: 10 }}>กดวิเคราะห์เพื่อคำนวณค่าน้ำหนักสถิติจริงแบบ Real-time</div>
+              <div style={{ fontSize: 12, color: "var(--txt3)", textAlign: "center", padding: 10 }}>กดวิเคราะห์เพื่อคำนวณค่าน้ำหนักสถิติจริงแบบ Real-time</div>
             )}
           </div>
 
@@ -839,12 +852,12 @@ ${contextStr}
               </span>
             )}
           </div>
-          <span style={{ fontSize: 10, color: "var(--txt3)" }}>{showBacktest ? "▲ ซ่อนแผงจำลอง" : "▼ เปิดแผงจำลอง"}</span>
+          <span style={{ fontSize: 12, color: "var(--txt3)" }}>{showBacktest ? "▲ ซ่อนแผงจำลอง" : "▼ เปิดแผงจำลอง"}</span>
         </div>
 
         {showBacktest && (
           <div className="fade mt" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontSize: 11, color: "var(--txt3)", lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: "var(--txt3)", lineHeight: 1.5 }}>
               รันแบบจำลองการทำนายย้อนหลังตามจำนวนงวดจริง เพื่อวัดความถูกต้องของค่าน้ำหนักและ Constraints ที่คุณตั้งค่าไว้ โดยระบบจะถือว่าถูกรางวัล (HIT) เมื่อเลขรางวัลจริงอยู่ในรายชื่อ 4 เลขทำนายหลัก (Primary)
             </div>
 
@@ -916,7 +929,7 @@ ${contextStr}
 
                 {/* Line Chart showing accuracy trend */}
                 <div className="sbox" style={{ padding: "16px 8px", height: 200 }}>
-                  <div style={{ fontSize: 10, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, textAlign: "left", paddingLeft: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--txt3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, textAlign: "left", paddingLeft: 8 }}>
                     แนวโน้มอัตราการเข้าเป้าสะสม (Cumulative Hit Rate Trend)
                   </div>
                   <ResponsiveContainer width="100%" height="90%">
@@ -924,7 +937,7 @@ ${contextStr}
                       <XAxis dataKey="index" stroke="var(--txt3)" fontSize={9} tickLine={false} />
                       <YAxis hide={true} domain={[0, 110]} />
                       <Tooltip 
-                        contentStyle={{ background: "var(--s1)", borderColor: "var(--bdr)", borderRadius: 8, fontSize: 11 }}
+                        contentStyle={{ background: "var(--s1)", borderColor: "var(--bdr)", borderRadius: 8, fontSize: 12 }}
                         labelFormatter={(lbl) => `งวดที่ทดสอบ ${lbl}`}
                       />
                       <Line 
@@ -941,7 +954,7 @@ ${contextStr}
 
                 {/* Draw logs */}
                 <div>
-                  <div style={{ fontSize: 10, color: "var(--gold)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--gold)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
                     บันทึกผลจำลองรายงวด (Backtest Log Breakdown)
                   </div>
                   <div className="tbl-wrap" style={{ maxHeight: 220 }}>
@@ -959,14 +972,14 @@ ${contextStr}
                           <tr key={i}>
                             <td>{d.date}</td>
                             <td style={{ fontFamily: "Chakra Petch", fontWeight: "bold", fontSize: 14, color: "var(--txt)" }}>{d.actual}</td>
-                            <td style={{ fontSize: 11, color: "var(--txt3)", letterSpacing: 1.5 }}>{d.predicted}</td>
+                            <td style={{ fontSize: 12, color: "var(--txt3)", letterSpacing: 1.5 }}>{d.predicted}</td>
                             <td>
                               {d.isHit ? (
-                                <span style={{ color: "var(--green)", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: "bold", fontSize: 11 }}>
+                                <span style={{ color: "var(--green)", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: "bold", fontSize: 12 }}>
                                   ✓ HIT (เข้าเป้า)
                                 </span>
                               ) : (
-                                <span style={{ color: "var(--txt3)", opacity: 0.6, fontSize: 11 }}>
+                                <span style={{ color: "var(--txt3)", opacity: 0.6, fontSize: 12 }}>
                                   ✗ MISS (ไม่เข้า)
                                 </span>
                               )}
@@ -1028,409 +1041,4 @@ ${contextStr}
       </div>
     </div>
   );
-}
-
-/**
- * PerformanceTrackingPanel — Historical Performance Tracking dashboard.
- * Shows empirical hit rates at Top-10, Top-20, Top-50 thresholds in a
- * high-contrast 3-column grid with color-coded tier indicators.
- *
- * @param {{ hitRateTop10: number, hitRateTop20: number, hitRateTop50: number, total: number }} props
- */
-function PerformanceTrackingPanel({ hitRateTop10, hitRateTop20, hitRateTop50, total }) {
-  function tierColor(pct) {
-    if (pct >= 70) return "var(--green)";
-    if (pct >= 40) return "var(--gold)";
-    return "var(--red)";
-  }
-  const tiers = [
-    { id: "perf-top10", label: "Top 10", labelTH: "อันดับ 1-10", value: hitRateTop10 ?? 0, Icon: Award,     poolNote: "10 ตัว" },
-    { id: "perf-top20", label: "Top 20", labelTH: "อันดับ 1-20", value: hitRateTop20 ?? 0, Icon: Target,    poolNote: "20 ตัว" },
-    { id: "perf-top50", label: "Top 50", labelTH: "อันดับ 1-50", value: hitRateTop50 ?? 0, Icon: BarChart3, poolNote: "50 ตัว" },
-  ];
-  return (
-    <div
-      id="performance-tracking-panel"
-      role="region"
-      aria-label="Historical Performance Tracking"
-      style={{ border: "1px solid var(--bdr2)", borderRadius: 13, padding: "16px 16px 14px", background: "var(--s1)" }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-        <BarChart3 size={14} aria-hidden="true" style={{ color: "var(--accent)" }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent3)" }}>Historical Performance Tracking</span>
-        <span style={{ fontSize: 10, color: "var(--txt3)", letterSpacing: 0.5 }}>
-          &mdash; อัตราเข้าเป้าเชิงประจักษ์ ({total} งวดจำลอง)
-        </span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(80px, 1fr))", gap: 10 }}>
-        {tiers.map((t) => {
-          const color = tierColor(t.value);
-          return (
-            <div
-              key={t.id}
-              id={t.id}
-              role="group"
-              aria-label={`${t.label}: ${t.value}%`}
-              style={{ background: `${color}0d`, border: `1.5px solid ${color}33`, borderRadius: 10, padding: "14px 10px 12px", textAlign: "center", position: "relative", overflow: "hidden" }}
-            >
-              <div style={{ position: "absolute", bottom: 0, left: 0, width: `${t.value}%`, height: 3, background: `linear-gradient(90deg, ${color}44, ${color})`, transition: "width 1s cubic-bezier(0.16, 1, 0.3, 1)" }} />
-              <t.Icon size={14} aria-hidden="true" style={{ color, marginBottom: 6, display: "block", margin: "0 auto 6px" }} />
-              <div style={{ fontSize: 10, color: "var(--txt3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6, fontFamily: "Chakra Petch, monospace" }}>{t.label}</div>
-              <div style={{ fontFamily: "Chakra Petch, monospace", fontSize: 28, fontWeight: 900, color, lineHeight: 1, textShadow: `0 0 10px ${color}44`, marginBottom: 5 }}>{t.value}%</div>
-              <div style={{ fontSize: 10, color: "var(--txt3)" }}>{t.labelTH}</div>
-              <div style={{ fontSize: 10, color, opacity: 0.65, marginTop: 3 }}>pool: {t.poolNote}</div>
-            </div>
-          );
-        })}
-      </div>
-      <div style={{ marginTop: 10, display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-        {[
-          { color: "var(--green)", label: "≥ 70% — ความลึกสูง" },
-          { color: "var(--gold)",  label: "40–69% — ปานกลาง" },
-          { color: "var(--red)",   label: "< 40% — ปรับน้ำหนักใหม่" },
-        ].map((l) => (
-          <div key={l.label} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--txt3)" }}>
-            <span aria-hidden="true" style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: l.color }} />
-            {l.label}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * EvidencePanel — Displays the four mathematical model sub-scores and the
- * composite Final Score for the top-ranked prediction candidate.
- * All evidence fields gracefully fallback to 0 for missing or malformed data.
- *
- * @param {{ evidence: Object|undefined, accentColor: string }} props
- */
-function EvidencePanel({ evidence, accentColor }) {
-  const color = accentColor || "var(--accent)";
-  function safeScore(val) {
-    const n = Number(val);
-    return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : 0;
-  }
-  const scores = [
-    { id: "ev-positional", label: "Positional Frequency", labelTH: "ความถี่ตามหลัก",       value: safeScore(evidence?.positional), barColor: "var(--gold)",   Icon: BarChart3  },
-    { id: "ev-recency",    label: "Recency / Gap",        labelTH: "น้ำหนักช่วงงวด",       value: safeScore(evidence?.recency),    barColor: "var(--cyan)",   Icon: TrendingUp },
-    { id: "ev-markov",    label: "Markov Transition",    labelTH: "การเปลี่ยนมาร์คอฟ",      value: safeScore(evidence?.markov),     barColor: "var(--purple)", Icon: TrendingUp },
-    { id: "ev-pair",      label: "Pair Strength",        labelTH: "คู่ตัวเลขสัมพันธ์",    value: safeScore(evidence?.pair),       barColor: "var(--green)",  Icon: Check      },
-  ];
-  const finalScore = safeScore(evidence?.finalScore);
-  const finalColor = finalScore >= 70 ? "var(--green)" : finalScore >= 45 ? "var(--gold)" : "var(--red)";
-  return (
-    <div
-      id="evidence-panel"
-      role="region"
-      aria-label="Evidence Panel"
-      style={{ border: `1px solid ${color}33`, background: "var(--s1)", borderRadius: 14, padding: 20, marginTop: 0 }}
-    >
-      <div className="ctitle" style={{ gap: "8px", marginBottom: 14 }}>
-        <BarChart3 size={14} aria-hidden="true" style={{ color }} />
-        <span style={{ color }}>Evidence Panel</span>
-        <span className="csub">น้ำหนักหลักฐานทางคณิตศาสตร์ต่อตัวเลขเด่น</span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {scores.map((s) => (
-          <div key={s.id} id={s.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ minWidth: 180, display: "flex", flexDirection: "column" }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--txt)", fontWeight: 600 }}>
-                <s.Icon size={12} aria-hidden="true" style={{ color: s.barColor, flexShrink: 0 }} />
-                {s.label}
-              </span>
-              <span style={{ fontSize: 10, color: "var(--txt3)", letterSpacing: 0.5 }}>{s.labelTH}</span>
-            </div>
-            <div style={{ flex: 1, height: 7, background: "var(--s2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--bdr2)" }}>
-              <div style={{ height: "100%", width: `${s.value}%`, background: `linear-gradient(90deg, ${s.barColor}99, ${s.barColor})`, borderRadius: 99, transition: "width 0.9s cubic-bezier(0.16, 1, 0.3, 1)" }} />
-            </div>
-            <div style={{ minWidth: 38, textAlign: "right", fontFamily: "Chakra Petch, monospace", fontSize: 13, fontWeight: 700, color: s.barColor }}>
-              {evidence ? `${s.value}` : "—"}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div
-        id="ev-final-score"
-        role="meter"
-        aria-valuenow={finalScore}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`Final Score: ${finalScore}`}
-        style={{ marginTop: 14, padding: "12px 14px", borderRadius: 10, background: `${finalColor}0f`, border: `1.5px solid ${finalColor}44`, display: "flex", alignItems: "center", gap: 12 }}
-      >
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <Award size={12} aria-hidden="true" style={{ color: finalColor }} />
-            <span style={{ fontSize: 10, color: finalColor, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", fontFamily: "Chakra Petch, monospace" }}>
-              Final Score — คะแนนรวมถ่วงน้ำหนัก
-            </span>
-          </div>
-          <div style={{ height: 10, background: "var(--s2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--bdr2)" }}>
-            <div style={{ height: "100%", width: `${finalScore}%`, background: `linear-gradient(90deg, ${finalColor}88, ${finalColor})`, borderRadius: 99, transition: "width 1.1s cubic-bezier(0.16, 1, 0.3, 1)", boxShadow: `0 0 8px ${finalColor}66` }} />
-          </div>
-        </div>
-        <div style={{ fontFamily: "Chakra Petch, monospace", fontSize: 28, fontWeight: 900, color: finalColor, lineHeight: 1, textShadow: `0 0 12px ${finalColor}55`, minWidth: 56, textAlign: "right" }}>
-          {evidence ? finalScore : "—"}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * EntropyPanel — Displays Shannon Entropy (H) per digit position to reveal
- * statistical clustering (low H) vs randomness (high H) in historical draws.
- *
- * Entropy is computed live from history on every render — the calculation is
- * O(N x L x 10) and measured at < 1ms for all realistic lottery dataset sizes,
- * satisfying the 50ms interaction-latency budget with a >= 10x margin.
- *
- * @param {{ history: Array, mode: string, lotteryType: string }} props
- */
-function EntropyPanel({ history, mode, lotteryType }) {
-  const data = computePositionalEntropy(history, mode, lotteryType);
-  if (!data.length) return null;
-
-  // Overall entropy signal: average across positions
-  const avgH = data.reduce((s, d) => s + d.entropy, 0) / data.length;
-  const avgTier = ENTROPY_THRESHOLDS.find(t => avgH >= t.minH) ?? ENTROPY_THRESHOLDS[ENTROPY_THRESHOLDS.length - 1];
-  const LOG2_10 = Math.log(10) / Math.log(2); // ≈ 3.3219
-
-  return (
-    <div
-      id="entropy-panel"
-      role="region"
-      aria-label="Positional Entropy Analysis"
-      style={{
-        border: `1px solid ${avgTier.color}44`,
-        background: "var(--s1)",
-        borderRadius: 14,
-        padding: 20,
-        marginTop: 0,
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-        <BarChart3 size={14} aria-hidden="true" style={{ color: avgTier.color, flexShrink: 0 }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: avgTier.color }}>Positional Entropy Analysis</span>
-        <span style={{ fontSize: 10, color: "var(--txt3)", letterSpacing: 0.4 }}>Shannon H per digit column</span>
-
-        {/* Overall signal badge */}
-        <span
-          aria-label={`Overall entropy signal: ${avgTier.label}`}
-          style={{
-            marginLeft: "auto",
-            display: "inline-flex", alignItems: "center", gap: 5,
-            background: `${avgTier.color}18`,
-            border: `1px solid ${avgTier.color}55`,
-            borderRadius: 6, padding: "3px 9px",
-            fontSize: 10, color: avgTier.color, fontWeight: 700,
-            fontFamily: "Chakra Petch, monospace", letterSpacing: 1,
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: avgTier.color, display: "inline-block", flexShrink: 0 }} />
-          {avgTier.label.toUpperCase()}
-        </span>
-      </div>
-
-      {/* Per-position entropy rows */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        {data.map((d) => {
-          const fillPct = Math.round((d.entropy / LOG2_10) * 100);
-          return (
-            <div
-              key={d.position}
-              id={`entropy-pos-${d.position}`}
-              style={{ display: "flex", alignItems: "center", gap: 10 }}
-            >
-              {/* Position label */}
-              <div style={{ minWidth: 52, display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--txt)", fontFamily: "Chakra Petch, monospace" }}>
-                  Col {d.position + 1}
-                </span>
-                <span style={{ fontSize: 9, color: "var(--txt3)" }}>top: {d.topDigit} ({d.topFreqPct}%)</span>
-              </div>
-
-              {/* Entropy bar */}
-              <div
-                role="meter"
-                aria-valuenow={d.entropy}
-                aria-valuemin={0}
-                aria-valuemax={3.32}
-                aria-label={`Column ${d.position + 1} entropy: ${d.entropy} bits`}
-                style={{ flex: 1, height: 7, background: "var(--s2)", borderRadius: 99, overflow: "hidden", border: "1px solid var(--bdr2)" }}
-              >
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${fillPct}%`,
-                    background: `linear-gradient(90deg, ${d.color}99, ${d.color})`,
-                    borderRadius: 99,
-                    transition: "width 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
-                  }}
-                />
-              </div>
-
-              {/* Raw value */}
-              <div style={{ minWidth: 40, textAlign: "right", fontFamily: "Chakra Petch, monospace", fontSize: 12, fontWeight: 700, color: d.color }}>
-                {d.entropy}
-              </div>
-
-              {/* Severity label */}
-              <div style={{ minWidth: 130, fontSize: 10, color: d.color, fontWeight: 600, lineHeight: 1.3 }}>
-                {d.label}
-                <div style={{ fontSize: 9, color: "var(--txt3)", fontWeight: 400, marginTop: 1 }}>{d.labelTH.split(" — ")[0]}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Threshold legend */}
-      <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--bdr2)", display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-        {ENTROPY_THRESHOLDS.map((t) => (
-          <div key={t.severity} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 9.5, color: "var(--txt3)" }}>
-            <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: t.color, flexShrink: 0 }} />
-            <span style={{ color: t.color, fontWeight: 600 }}>{t.minH.toFixed(2)}+</span>
-            <span>{t.label}</span>
-          </div>
-        ))}
-        <div style={{ fontSize: 9.5, color: "var(--txt3)", opacity: 0.7 }}>max = log₂(10) = 3.32 bits</div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Helper to parse inline markdown (bold **text** and code `text`) into JSX elements
- */
-function parseInlineMarkup(text) {
-  if (!text) return [];
-  const regex = /(\*\*.*?\*\*|`.*?`)/g;
-  const parts = text.split(regex);
-  return parts.map((part, index) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={index} style={{ color: "var(--accent3)", fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return (
-        <code key={index} style={{ 
-          background: "rgba(255,255,255,0.08)", 
-          padding: "2px 6px", 
-          borderRadius: 4, 
-          fontFamily: "monospace",
-          fontSize: "0.9em",
-          color: "var(--gold)"
-        }}>
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-    return part;
-  });
-}
-
-/**
- * Helper to render basic markdown structures beautifully inside React
- */
-function renderMarkdown(text) {
-  if (!text) return null;
-  const lines = text.split("\n");
-  const renderedElements = [];
-  
-  lines.forEach((line, index) => {
-    // Empty lines act as paragraph spacers
-    if (!line.trim()) {
-      renderedElements.push(<div key={`empty-${index}`} style={{ height: "10px" }} />);
-      return;
-    }
-
-    // Check for headers (e.g. ### Header)
-    const headerMatch = line.match(/^(#{1,6})\s+(.*)/);
-    if (headerMatch) {
-      const level = headerMatch[1].length;
-      const content = headerMatch[2];
-      const fontSize = level === 1 ? "1.4rem" : level === 2 ? "1.2rem" : "1.05rem";
-      renderedElements.push(
-        <div key={`h-${index}`} style={{ 
-          fontWeight: 800, 
-          fontSize, 
-          marginTop: "14px", 
-          marginBottom: "6px", 
-          color: "var(--accent3)",
-          fontFamily: "Chakra Petch, sans-serif"
-        }}>
-          {parseInlineMarkup(content)}
-        </div>
-      );
-      return;
-    }
-
-    // Check for bullet list items starting with *, -, or bullet characters
-    const listMatch = line.match(/^(\s*)([*•-]\s+)(.*)/);
-    if (listMatch) {
-      const indent = listMatch[1].length;
-      const content = listMatch[3];
-      const paddingLeft = indent > 0 ? `${indent * 8 + 14}px` : "14px";
-      renderedElements.push(
-        <div key={`li-${index}`} style={{ 
-          paddingLeft, 
-          position: "relative", 
-          marginBottom: "6px",
-          lineHeight: "1.65",
-          color: "var(--txt2)"
-        }}>
-          <span style={{ 
-            position: "absolute", 
-            left: indent > 0 ? `${indent * 8}px` : "0px", 
-            color: "var(--accent)",
-            fontWeight: "bold"
-          }}>•</span>
-          {parseInlineMarkup(content)}
-        </div>
-      );
-      return;
-    }
-
-    // Check for numbered list items: e.g. "1. **Bold:** text"
-    const numListMatch = line.match(/^(\s*)(\d+\.\s+)(.*)/);
-    if (numListMatch) {
-      const indent = numListMatch[1].length;
-      const marker = numListMatch[2];
-      const content = numListMatch[3];
-      const paddingLeft = indent > 0 ? `${indent * 8 + 20}px` : "20px";
-      renderedElements.push(
-        <div key={`nli-${index}`} style={{ 
-          paddingLeft, 
-          position: "relative", 
-          marginBottom: "6px",
-          lineHeight: "1.65",
-          color: "var(--txt2)"
-        }}>
-          <span style={{ 
-            position: "absolute", 
-            left: indent > 0 ? `${indent * 8}px` : "0px", 
-            color: "var(--accent)",
-            fontFamily: "Chakra Petch, sans-serif",
-            fontSize: "0.95em",
-            fontWeight: 600
-          }}>{marker}</span>
-          {parseInlineMarkup(content)}
-        </div>
-      );
-      return;
-    }
-
-    // Regular paragraph line
-    renderedElements.push(
-      <p key={`p-${index}`} style={{ margin: "0 0 8px 0", lineHeight: "1.65", color: "var(--txt)" }}>
-        {parseInlineMarkup(line)}
-      </p>
-    );
-  });
-
-  return <div style={{ display: "flex", flexDirection: "column" }}>{renderedElements}</div>;
 }
