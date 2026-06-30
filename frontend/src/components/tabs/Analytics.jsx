@@ -170,36 +170,60 @@ export default function Analytics({ stats: localStats, history }) {
   return (
     <div className="fade">
       {/* Overview */}
-      <div className="grid-res grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt">
-        <div className="sbox" style={{ background: "rgba(255, 255, 255, 0.01)" }}>
-          <div className="sv">{stats ? history.length : <Skeleton width={60} height={28} className="mx-auto" />}</div>
-          <div className="sl">งวดทั้งหมด</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "16px" }}>
+        {/* Featured Card (Hot & Cold Digits) */}
+        <div className="card" style={{ flex: "2 1 600px", marginBottom: 0, padding: "24px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "24px" }}>
+            <div style={{ flex: 1, minWidth: "240px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--red)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, marginBottom: "12px" }}>
+                <Flame size={12} />
+                <span>Hot Digits</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {stats ? stats.hot.map(h => (
+                  <div key={h.d} className="dball hot" style={{ width: "32px", height: "32px", fontSize: "14px", fontWeight: 400, boxShadow: "none" }}>
+                    {h.d}
+                  </div>
+                )) : <Skeleton width={120} height={32} />}
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, minWidth: "240px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--blue)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, marginBottom: "12px" }}>
+                <Snowflake size={12} />
+                <span>Cold Digits</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {stats ? stats.cold.map(c => (
+                  <div key={c.d} className="dball cold" style={{ width: "32px", height: "32px", fontSize: "14px", fontWeight: 400, boxShadow: "none" }}>
+                    {c.d}
+                  </div>
+                )) : <Skeleton width={120} height={32} />}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="sbox" style={{ border: "1px solid rgba(239, 68, 68, 0.25)", background: "linear-gradient(180deg, var(--s2), rgba(239, 68, 68, 0.03))" }}>
-          <div className="sv" style={{ color: "#ef5350", fontSize: 18 }}>
-            {stats ? stats.hot.map(h => h.d).join(" · ") : <Skeleton width={100} height={24} className="mx-auto" />}
+
+        {/* Ambient Metadata Card (Draw count & Combos) */}
+        <div className="card" style={{ flex: "1 1 300px", marginBottom: 0, padding: "24px", display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px" }}>
+          <div>
+            <div style={{ fontSize: "11px", color: "var(--txt3)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, marginBottom: "4px" }}>
+              งวดทั้งหมดที่คำนวณ
+            </div>
+            <div style={{ fontSize: "28px", fontFamily: "'Playfair Display', serif", color: "var(--txt)", fontWeight: 400 }}>
+              {stats ? history.length : <Skeleton width={60} height={28} />}
+              <span style={{ fontSize: "14px", color: "var(--txt2)", marginLeft: "6px", fontWeight: 300 }}>งวด</span>
+            </div>
           </div>
-          <div className="sl" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            <Flame size={12} style={{ color: "#ef5350" }} />
-            <span>Hot Digits</span>
-          </div>
-        </div>
-        <div className="sbox" style={{ border: "1px solid rgba(59, 130, 246, 0.2)", background: "linear-gradient(180deg, var(--s2), rgba(59, 130, 246, 0.02))" }}>
-          <div className="sv" style={{ color: "var(--blue)", fontSize: 18 }}>
-            {stats ? stats.cold.map(c => c.d).join(" · ") : <Skeleton width={100} height={24} className="mx-auto" />}
-          </div>
-          <div className="sl" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            <Snowflake size={12} style={{ color: "var(--blue)" }} />
-            <span>Cold Digits</span>
-          </div>
-        </div>
-        <div className="sbox" style={{ border: `1px solid ${lotteryType === 'lao' ? 'rgba(167, 139, 250, 0.3)' : 'rgba(201, 149, 42, 0.3)'}`, background: `linear-gradient(180deg, var(--s2), ${lotteryType === 'lao' ? 'rgba(167, 139, 250, 0.04)' : 'rgba(201, 149, 42, 0.04)'})` }}>
-          <div className="sv" style={{ fontSize: 18, color: "var(--accent2)" }}>
-            {stats ? stats.combo.slice(0, 3).map(c => c.n).join(" · ") : <Skeleton width={120} height={24} className="mx-auto" />}
-          </div>
-          <div className="sl" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            <Award size={12} style={{ color: "var(--accent)" }} />
-            <span>Top เลขเด่นที่ออกบ่อย</span>
+
+          <div style={{ borderTop: "1px solid var(--bdr2)", paddingTop: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--txt3)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, marginBottom: "4px" }}>
+              <Award size={12} style={{ color: "var(--accent)" }} />
+              <span>Top เลขเด่นที่ออกบ่อย</span>
+            </div>
+            <div style={{ fontSize: "18px", color: "var(--accent)", fontWeight: 500, letterSpacing: "1px" }}>
+              {stats ? stats.combo.slice(0, 3).map(c => c.n).join(" · ") : <Skeleton width={120} height={24} />}
+            </div>
           </div>
         </div>
       </div>
@@ -264,8 +288,8 @@ export default function Analytics({ stats: localStats, history }) {
             <div style={{ height: 220, marginTop: 10 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={zScoreList} margin={{ top: 10, right: 10, left: -22, bottom: 5 }}>
-                  <XAxis dataKey="digit" tick={{ fill: "#4a5170", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#4a5170", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="digit" tick={{ fill: "var(--txt3)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "var(--txt3)", fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
@@ -273,31 +297,32 @@ export default function Analytics({ stats: localStats, history }) {
                         const isHot = data.z_score > 0;
                         return (
                           <div style={{
-                            background: "var(--s3)",
+                            background: "var(--s1)",
                             border: "1px solid var(--bdr)",
-                            padding: "8px 12px",
-                            borderRadius: "var(--r)",
+                            padding: "10px 14px",
+                            borderRadius: "4px",
                             fontSize: 12,
-                            color: "var(--txt)"
+                            color: "var(--txt)",
+                            boxShadow: "0 8px 24px rgba(58,46,34,0.08)"
                           }}>
-                            <div style={{ fontWeight: 600, color: "var(--accent2)", marginBottom: 4 }}>
+                            <div style={{ fontWeight: 500, fontFamily: "'Playfair Display', serif", color: "var(--accent)", marginBottom: 6, fontSize: 16 }}>
                               ตัวเลข: {data.digit}
                             </div>
-                            <div>ออกทั้งหมด: {data.count} ครั้ง</div>
-                            <div>
+                            <div style={{ color: "var(--txt2)", fontWeight: 300 }}>ออกทั้งหมด: {data.count} ครั้ง</div>
+                            <div style={{ color: "var(--txt2)", fontWeight: 300 }}>
                               Z-Score: <span style={{ color: isHot ? "var(--red)" : "var(--blue)", fontWeight: 600 }}>
                                 {data.z_score.toFixed(2)}
                               </span>
                             </div>
-                            <div style={{ fontSize: 10, color: "var(--txt3)", marginTop: 4 }}>
+                            <div style={{ fontSize: 12, color: "var(--txt3)", marginTop: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>
                               {isHot ? (
                                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                  <ThermometerSun size={14} />
+                                  <ThermometerSun size={12} />
                                   <span>ออกบ่อยกว่าปกติ</span>
                                 </div>
                               ) : (
                                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                  <ThermometerSnowflake size={14} />
+                                  <ThermometerSnowflake size={12} />
                                   <span>ออกน้อยกว่าปกติ</span>
                                 </div>
                               )}
@@ -308,8 +333,8 @@ export default function Analytics({ stats: localStats, history }) {
                       return null;
                     }}
                   />
-                  <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
-                  <Bar dataKey="z_score" radius={[4, 4, 0, 0]}>
+                  <ReferenceLine y={0} stroke="var(--bdr)" strokeWidth={1} />
+                  <Bar dataKey="z_score" radius={[2, 2, 0, 0]}>
                     {zScoreList.map((entry) => {
                       const color = entry.z_score > 0 ? "var(--accent)" : "var(--blue)";
                       return <Cell key={`cell-${entry.digit}`} fill={color} />;
@@ -319,11 +344,11 @@ export default function Analytics({ stats: localStats, history }) {
               </ResponsiveContainer>
             </div>
 
-            <div className="fchips mt" style={{ fontSize: 10, gap: 10, display: "inline-flex", alignItems: "center" }}>
-              <span style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            <div className="fchips mt" style={{ fontSize: 12, gap: 12, display: "inline-flex", alignItems: "center" }}>
+              <span style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: "5px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--accent)" }} /> Z-Score &gt; 0 (ออกสูงกว่าปกติ)
               </span>
-              <span style={{ color: "var(--blue)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ color: "var(--blue)", display: "inline-flex", alignItems: "center", gap: "5px", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--blue)" }} /> Z-Score &lt; 0 (ออกต่ำกว่าปกติ)
               </span>
             </div>
@@ -337,6 +362,7 @@ export default function Analytics({ stats: localStats, history }) {
       </div>
 
       {/* Hot / Cold / Overdue */}
+
       <div className="grid-res grid-cols-1 md:grid-cols-3">
         <div className="card">
           <div className="ctitle" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
@@ -448,7 +474,7 @@ export default function Analytics({ stats: localStats, history }) {
           </div>
           <div className="grid-res grid-cols-1 lg:grid-cols-2">
             <div>
-              <div style={{ fontSize: 10, color: "var(--accent)", marginBottom: 8, letterSpacing: 1, display: "flex", alignItems: "center", gap: "4px" }}>
+              <div style={{ fontSize: 12, color: "var(--accent)", marginBottom: 8, letterSpacing: 1, display: "flex", alignItems: "center", gap: "4px" }}>
                 <Pin size={10} /> งวดวันที่ 1
               </div>
               <div className="chips">
@@ -460,7 +486,7 @@ export default function Analytics({ stats: localStats, history }) {
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--cyan)", marginBottom: 8, letterSpacing: 1, display: "flex", alignItems: "center", gap: "4px" }}>
+              <div style={{ fontSize: 12, color: "var(--cyan)", marginBottom: 8, letterSpacing: 1, display: "flex", alignItems: "center", gap: "4px" }}>
                 <Pin size={10} /> งวดวันที่ 16
               </div>
               <div className="chips">
@@ -504,7 +530,7 @@ export default function Analytics({ stats: localStats, history }) {
                 );
               })
             ) : (
-              <div style={{ fontSize: 11, color: "var(--txt3)", padding: 10, width: "100%", textAlign: "center" }}>ไม่พบข้อมูลความถี่สะสม</div>
+              <div style={{ fontSize: 12, color: "var(--txt3)", padding: 10, width: "100%", textAlign: "center" }}>ไม่พบข้อมูลความถี่สะสม</div>
             )}
           </div>
 
@@ -520,7 +546,7 @@ export default function Analytics({ stats: localStats, history }) {
               borderTop: "1px solid rgba(255, 255, 255, 0.05)",
               paddingTop: 12
             }}>
-              <span style={{ fontSize: 11, color: "var(--txt3)" }}>
+              <span style={{ fontSize: 12, color: "var(--txt3)" }}>
                 แสดง {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, freqList.length)} จาก {freqList.length} รายการ
               </span>
 
@@ -531,7 +557,7 @@ export default function Analytics({ stats: localStats, history }) {
                   style={{
                     height: "auto",
                     padding: "6px 12px",
-                    fontSize: 11,
+                    fontSize: 12,
                     opacity: currentPage === 1 ? 0.4 : 1,
                     cursor: currentPage === 1 ? "default" : "pointer",
                     background: "rgba(255, 255, 255, 0.03)",
@@ -548,7 +574,7 @@ export default function Analytics({ stats: localStats, history }) {
                 <span style={{
                   display: "flex",
                   alignItems: "center",
-                  fontSize: 11,
+                  fontSize: 12,
                   color: "var(--txt2)",
                   padding: "0 8px"
                 }}>
@@ -560,7 +586,7 @@ export default function Analytics({ stats: localStats, history }) {
                   style={{
                     height: "auto",
                     padding: "6px 12px",
-                    fontSize: 11,
+                    fontSize: 12,
                     opacity: currentPage === totalPages ? 0.4 : 1,
                     cursor: currentPage === totalPages ? "default" : "pointer",
                     background: "rgba(255, 255, 255, 0.03)",
