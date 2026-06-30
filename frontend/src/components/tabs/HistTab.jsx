@@ -247,7 +247,7 @@ export default function HistTab({ history }) {
           {lotteryType === "thai" && (
             <button 
               className="btn btn-b" 
-              style={{fontSize: 11, padding: '4px 10px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px'}}
+              style={{fontSize: 12, padding: '4px 10px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px'}}
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
             >
@@ -272,16 +272,16 @@ export default function HistTab({ history }) {
             <div className="grid-res grid-cols-1 md:grid-cols-2" style={{marginBottom:12}}>
               <div>
                 <label className="lbl">วันที่ออกรางวัล (พ.ศ.)</label>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <select className="inp" value={day} onChange={e=>setDay(e.target.value)} style={{ flex: 1 }}>
+                <div className="date-select-row">
+                  <select className="date-select date-select--day" value={day} onChange={e=>setDay(e.target.value)}>
                     <option value="">วัน</option>
                     {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
-                  <select className="inp" value={month} onChange={e=>setMonth(e.target.value)} style={{ flex: 2 }}>
+                  <select className="date-select date-select--month" value={month} onChange={e=>setMonth(e.target.value)}>
                     <option value="">เดือน</option>
                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
-                  <select className="inp" value={yearBE} onChange={e=>setYearBE(e.target.value)} style={{ flex: 1.5 }}>
+                  <select className="date-select date-select--year" value={yearBE} onChange={e=>setYearBE(e.target.value)}>
                     <option value="">ปี พ.ศ.</option>
                     {YEARS_BE.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -351,16 +351,16 @@ export default function HistTab({ history }) {
             <div className="grid-res grid-cols-1 md:grid-cols-2" style={{marginBottom:12}}>
               <div>
                 <label className="lbl">วันที่ออกรางวัล (พ.ศ.)</label>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <select className="inp" value={day} onChange={e=>setDay(e.target.value)} style={{ flex: 1 }}>
+                <div className="date-select-row">
+                  <select className="date-select date-select--day" value={day} onChange={e=>setDay(e.target.value)}>
                     <option value="">วัน</option>
                     {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
-                  <select className="inp" value={month} onChange={e=>setMonth(e.target.value)} style={{ flex: 2 }}>
+                  <select className="date-select date-select--month" value={month} onChange={e=>setMonth(e.target.value)}>
                     <option value="">เดือน</option>
                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
-                  <select className="inp" value={yearBE} onChange={e=>setYearBE(e.target.value)} style={{ flex: 1.5 }}>
+                  <select className="date-select date-select--year" value={yearBE} onChange={e=>setYearBE(e.target.value)}>
                     <option value="">ปี พ.ศ.</option>
                     {YEARS_BE.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -599,7 +599,7 @@ export default function HistTab({ history }) {
             </div>
             <p style={{ fontSize: 13, color: "var(--txt2)", margin: "16px 0", lineHeight: 1.6 }}>
               คุณต้องการลบงวดวันที่ <strong>{confirmDelete.dateStr}</strong> ใช่หรือไม่?<br />
-              <span style={{ fontSize: 11, color: "var(--txt3)" }}>*การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>
+              <span style={{ fontSize: 12, color: "var(--txt3)" }}>*การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button 

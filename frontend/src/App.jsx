@@ -18,6 +18,7 @@ import AIPredict from "./components/tabs/AIPredict";
 import Tools     from "./components/tabs/Tools";
 import HistTab   from "./components/tabs/HistTab";
 import AuthModal from "./components/common/AuthModal";
+import LogoutModal from "./components/common/LogoutModal";
 
 import { BarChart3, TrendingUp, Bot, Dices, History, AlertTriangle, Sun, Moon, LogIn, User } from "lucide-react";
 
@@ -35,14 +36,6 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
   const { user, setShowAuthModal, logout } = useAuth();
   const [confirmLogout, setConfirmLogout] = useState(false);
-
-  // Auto-reset logout confirmation state after 3 seconds of inactivity
-  useEffect(() => {
-    if (confirmLogout) {
-      const timer = setTimeout(() => setConfirmLogout(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [confirmLogout]);
 
   // 1. Fetch History (Draws) dynamically based on active lotteryType
   const { 
@@ -220,104 +213,100 @@ export default function App() {
             })}
           </nav>
 
-          {/* User Auth Section */}
-          <div className="auth-header-sec" style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-            {user ? (
-              <div 
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: "8px", 
-                  background: "rgba(255,255,255,0.04)", 
-                  border: "1px solid var(--bdr2)", 
-                  borderRadius: "20px", 
-                  padding: "4px 12px",
-                  height: "36px"
-                }}
-              >
-                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--green)" }} />
-                <span 
+          {/* Header Action Controls */}
+          <div className="hdr-actions">
+            {/* User Auth Section */}
+            <div className="auth-header-sec" style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+              {user ? (
+                <div 
                   style={{ 
-                    fontSize: "11px", 
-                    color: "var(--txt2)", 
-                    maxWidth: "100px", 
-                    overflow: "hidden", 
-                    textOverflow: "ellipsis", 
-                    whiteSpace: "nowrap",
-                    fontWeight: 500
-                  }} 
-                  title={user.email}
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    background: "var(--s2)", 
+                    border: "1px solid var(--bdr)", 
+                    borderRadius: "9999px", 
+                    padding: "4px 14px",
+                    height: "36px"
+                  }}
                 >
-                  {user.email.split("@")[0]}
-                </span>
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--green)" }} />
+                  <span 
+                    style={{ 
+                      fontSize: "11px", 
+                      color: "var(--txt2)", 
+                      maxWidth: "100px", 
+                      overflow: "hidden", 
+                      textOverflow: "ellipsis", 
+                      whiteSpace: "nowrap",
+                      fontWeight: 500
+                    }} 
+                    title={user.email}
+                  >
+                    {user.email.split("@")[0]}
+                  </span>
+                  <button 
+                    onClick={() => setConfirmLogout(true)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--red)",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                      padding: "0 0 0 8px",
+                      borderLeft: "1px solid var(--bdr2)",
+                      fontWeight: 600,
+                      transition: "color 0.2s"
+                    }}
+                  >
+                    ออก
+                  </button>
+                </div>
+              ) : (
                 <button 
-                  onClick={() => {
-                    if (confirmLogout) {
-                      logout();
-                      setConfirmLogout(false);
-                    } else {
-                      setConfirmLogout(true);
-                    }
-                  }}
+                  className="btn btn-g" 
+                  onClick={() => setShowAuthModal(true)}
                   style={{
-                    background: "transparent",
-                    border: "none",
-                    color: confirmLogout ? "#ff8a80" : "var(--red)",
                     fontSize: "11px",
-                    cursor: "pointer",
-                    padding: "0 0 0 8px",
-                    borderLeft: "1px solid var(--bdr2)",
-                    fontWeight: 600,
-                    transition: "color 0.2s"
+                    padding: "0 18px",
+                    height: "36px",
+                    minHeight: "unset",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase"
                   }}
                 >
-                  {confirmLogout ? "ยืนยันออก?" : "ออก"}
+                  <LogIn size={12} />
+                  <span>เข้าสู่ระบบ</span>
                 </button>
-              </div>
-            ) : (
-              <button 
-                className="btn btn-b" 
-                onClick={() => setShowAuthModal(true)}
-                style={{
-                  fontSize: "11px",
-                  padding: "0 14px",
-                  height: "36px",
-                  minHeight: "unset",
-                  borderRadius: "18px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontWeight: 600
-                }}
-              >
-                <LogIn size={12} />
-                <span>เข้าสู่ระบบ</span>
-              </button>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Theme Toggle Button */}
-          <button 
-            className="theme-btn" 
-            onClick={toggleTheme} 
-            aria-label={theme === "light" ? "เปลี่ยนเป็น Dark Mode" : "เปลี่ยนเป็น Light Mode"}
-            style={{
-              background: "var(--s2)",
-              border: "1px solid var(--bdr2)",
-              borderRadius: "50%",
-              width: "36px",
-              height: "36px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "var(--txt2)",
-              transition: "all 0.2s",
-              flexShrink: 0
-            }}
-          >
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
+            {/* Theme Toggle Button */}
+            <button 
+              className="theme-btn" 
+              onClick={toggleTheme} 
+              aria-label={theme === "light" ? "เปลี่ยนเป็น Dark Mode" : "เปลี่ยนเป็น Light Mode"}
+              style={{
+                background: "var(--s2)",
+                border: "1px solid var(--bdr)",
+                borderRadius: "50%",
+                width: "36px",
+                height: "36px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "var(--txt3)",
+                transition: "all 500ms cubic-bezier(0.19, 1, 0.22, 1)",
+                flexShrink: 0
+              }}
+            >
+              {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -333,10 +322,10 @@ export default function App() {
         </div>
 
         {(!history || history.length === 0) && tab !== 'history' ? (
-          <div className="card mt" style={{background:"var(--s1)",border:"1px solid rgba(201,149,42,0.2)",padding:28,textAlign:"center", display: "flex", flexDirection: "column", alignItems: "center"}}>
-            <History size={40} style={{ color: "var(--accent2)", marginBottom: 16 }} />
-            <h3 style={{color:"var(--accent2)",marginBottom:8}}>ยังไม่มีข้อมูลหวยในระบบ</h3>
-            <p style={{fontSize:13,color:"var(--txt3)",marginBottom:20}}>กรุณาไปที่เมนู "ประวัติ" เพื่อทำการประมวลผลข้อมูล</p>
+          <div className="card mt" style={{padding:32,textAlign:"center", display: "flex", flexDirection: "column", alignItems: "center"}}>
+            <History size={36} style={{ color: "var(--accent)", marginBottom: 20, opacity: 0.7 }} />
+            <h3 style={{fontFamily: "'Playfair Display', serif", fontWeight: 400, color:"var(--gold)", marginBottom:10, fontSize: 22}}>ยังไม่มีข้อมูลหวยในระบบ</h3>
+            <p style={{fontSize:14, fontWeight: 300, color:"var(--txt3)",marginBottom:24}}>กรุณาไปที่เมนู "ประวัติ" เพื่อทำการประมวลผลข้อมูล</p>
             <button className="btn btn-g" onClick={()=>setTab('history')}>ไปที่หน้าประวัติ</button>
           </div>
         ) : (
@@ -352,6 +341,17 @@ export default function App() {
       
       {/* Authentication Modal Dialog */}
       <AuthModal />
+
+      {/* Logout Confirmation Modal */}
+      {confirmLogout && (
+        <LogoutModal 
+          onClose={() => setConfirmLogout(false)} 
+          onConfirm={() => {
+            logout();
+            setConfirmLogout(false);
+          }}
+        />
+      )}
     </div>
   );
 }

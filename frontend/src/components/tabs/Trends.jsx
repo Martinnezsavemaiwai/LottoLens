@@ -50,10 +50,10 @@ export default function Trends({ stats, history }) {
         <div style={{height:200}}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={distData} margin={{top:0,right:0,left:-22,bottom:0}}>
-              <XAxis dataKey="label" tick={{fill:"#4a5170",fontSize:12}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:"#4a5170",fontSize:11}} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="label" tick={{fill:"var(--txt3)",fontSize:12}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fill:"var(--txt3)",fontSize:11}} axisLine={false} tickLine={false}/>
               <Tooltip content={<CTip/>}/>
-              <Bar dataKey="count" name="ครั้ง" radius={[5,5,0,0]}>
+              <Bar dataKey="count" name="ครั้ง" radius={[0,0,0,0]}>
                 {distData.map(item => {
                   const n = Number(item.label);
                   const color = stats.hotSet.has(n)?"var(--red)":stats.coldSet.has(n)?"var(--blue)":"var(--gold)";
@@ -100,8 +100,8 @@ export default function Trends({ stats, history }) {
         <div style={{height:180}}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={trendData} margin={{top:0,right:10,left:-22,bottom:0}}>
-              <XAxis dataKey="date" tick={{fill:"#4a5170",fontSize:11}} axisLine={false} tickLine={false}/>
-              <YAxis allowDecimals={false} tick={{fill:"#4a5170",fontSize:11}} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="date" tick={{fill:"var(--txt3)",fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis allowDecimals={false} tick={{fill:"var(--txt3)",fontSize:11}} axisLine={false} tickLine={false}/>
               <Tooltip content={<CTip/>}/>
               <Line dataKey="count" name={`เลข ${sel}`} stroke="var(--gold2)" strokeWidth={2}
                 dot={{fill:"var(--gold2)",r:3}} activeDot={{r:5}}/>

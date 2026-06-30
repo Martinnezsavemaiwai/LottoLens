@@ -68,37 +68,15 @@ export default function AuthModal() {
   };
 
   return (
-    <div className="modal-backdrop" onClick={handleClose} style={{ zIndex: 1000 }}>
+    <div className="modal-backdrop" onClick={handleClose} style={{ zIndex: 10000 }}>
       <div 
         className="modal-content card" 
         onClick={e => e.stopPropagation()}
         style={{
-          width: "100%",
-          maxWidth: "420px",
-          padding: "28px",
-          background: "rgba(18, 18, 18, 0.75)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05)",
-          borderRadius: "20px",
-          position: "relative"
+          position: "relative",
+          zIndex: 10001
         }}
       >
-        {/* Glow Effects */}
-        <div 
-          style={{
-            position: "absolute",
-            top: "-10%",
-            left: "-10%",
-            width: "120px",
-            height: "120px",
-            background: "var(--accent)",
-            filter: "blur(80px)",
-            opacity: 0.15,
-            pointerEvents: "none"
-          }}
-        />
-
         {/* Close Button */}
         <button 
           onClick={handleClose}
@@ -106,8 +84,8 @@ export default function AuthModal() {
             position: "absolute",
             top: "20px",
             right: "20px",
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "var(--s2)",
+            border: "1px solid var(--bdr)",
             borderRadius: "50%",
             width: "32px",
             height: "32px",
@@ -116,63 +94,88 @@ export default function AuthModal() {
             justifyContent: "center",
             cursor: "pointer",
             color: "var(--txt2)",
-            transition: "all 0.2s"
+            transition: "all 500ms cubic-bezier(0.19, 1, 0.22, 1)"
           }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.color = "var(--accent)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = "var(--bdr)";
+            e.currentTarget.style.color = "var(--txt2)";
+          }}
+          aria-label="ปิด"
         >
           <X size={16} />
         </button>
 
         {/* Title */}
         <div style={{ textAlign: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: "24px", color: "var(--accent3)", margin: "0 0 6px 0" }}>
+          <h2 style={{ 
+            fontFamily: "Playfair Display, serif", 
+            fontSize: "26px", 
+            fontWeight: 400,
+            fontStyle: "italic",
+            color: "var(--accent)", 
+            margin: "0 0 6px 0" 
+          }}>
             LottoLens Portal
           </h2>
-          <p style={{ fontSize: "11px", color: "var(--txt3)", margin: 0 }}>
+          <p style={{ 
+            fontSize: "11px", 
+            color: "var(--txt3)", 
+            textTransform: "uppercase", 
+            letterSpacing: "0.08em", 
+            fontWeight: 500, 
+            margin: 0 
+          }}>
             {isLogin ? "เข้าสู่ระบบเพื่อใช้งานฟีเจอร์ระดับแอดมิน" : "สมัครสมาชิกสำหรับเข้าใช้งานระบบ"}
           </p>
         </div>
 
-        {/* Tab Selector */}
+        {/* Tab Selector (Segmented Switcher) */}
         <div 
           style={{
             display: "flex",
-            background: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(255, 255, 255, 0.06)",
-            borderRadius: "10px",
+            background: "var(--s2)",
+            border: "1px solid var(--bdr)",
+            borderRadius: "var(--r-pill)",
             padding: "4px",
             marginBottom: "20px"
           }}
         >
           <button 
+            type="button"
             onClick={() => { setIsLogin(true); setError(""); }}
             style={{
               flex: 1,
               padding: "8px",
-              background: isLogin ? "rgba(255, 255, 255, 0.08)" : "transparent",
+              background: isLogin ? "var(--accent)" : "transparent",
               border: "none",
-              borderRadius: "8px",
-              color: isLogin ? "var(--accent2)" : "var(--txt3)",
+              borderRadius: "var(--r-pill)",
+              color: isLogin ? "#ffffff" : "var(--txt3)",
               fontSize: "12px",
-              fontWeight: 600,
+              fontWeight: 500,
               cursor: "pointer",
-              transition: "all 0.2s"
+              transition: "all 400ms cubic-bezier(0.19, 1, 0.22, 1)"
             }}
           >
             เข้าสู่ระบบ
           </button>
           <button 
+            type="button"
             onClick={() => { setIsLogin(false); setError(""); }}
             style={{
               flex: 1,
               padding: "8px",
-              background: !isLogin ? "rgba(255, 255, 255, 0.08)" : "transparent",
+              background: !isLogin ? "var(--accent)" : "transparent",
               border: "none",
-              borderRadius: "8px",
-              color: !isLogin ? "var(--accent2)" : "var(--txt3)",
+              borderRadius: "var(--r-pill)",
+              color: !isLogin ? "#ffffff" : "var(--txt3)",
               fontSize: "12px",
-              fontWeight: 600,
+              fontWeight: 500,
               cursor: "pointer",
-              transition: "all 0.2s"
+              transition: "all 400ms cubic-bezier(0.19, 1, 0.22, 1)"
             }}
           >
             สมัครสมาชิก
@@ -183,10 +186,10 @@ export default function AuthModal() {
         {error && (
           <div 
             style={{
-              background: "rgba(239, 68, 68, 0.1)",
+              background: "rgba(239, 68, 68, 0.08)",
               border: "1px solid var(--red)",
               color: "var(--red)",
-              borderRadius: "10px",
+              borderRadius: "var(--r)",
               padding: "10px 14px",
               fontSize: "12px",
               display: "flex",
@@ -203,10 +206,10 @@ export default function AuthModal() {
         {success && (
           <div 
             style={{
-              background: "rgba(76, 175, 80, 0.1)",
-              border: "1px solid rgba(76, 175, 80, 0.25)",
-              color: "#4caf50",
-              borderRadius: "10px",
+              background: "rgba(34, 197, 94, 0.08)",
+              border: "1px solid var(--green)",
+              color: "var(--green)",
+              borderRadius: "var(--r)",
               padding: "10px 14px",
               fontSize: "12px",
               display: "flex",
@@ -223,36 +226,52 @@ export default function AuthModal() {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div>
-            <label style={{ fontSize: "10px", color: "var(--txt3)", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>
+            <label style={{ 
+              fontSize: "11px", 
+              color: "var(--txt3)", 
+              textTransform: "uppercase", 
+              letterSpacing: "0.08em", 
+              fontWeight: 500,
+              display: "block", 
+              marginBottom: "6px" 
+            }}>
               อีเมล
             </label>
             <div style={{ position: "relative" }}>
-              <Mail size={14} style={{ position: "absolute", left: "12px", top: "12px", color: "var(--txt3)" }} />
+              <Mail size={14} style={{ position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)", color: "var(--txt3)", opacity: 0.7 }} />
               <input 
                 type="email" 
                 className="inp"
                 placeholder="name@example.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                style={{ paddingLeft: "36px", width: "100%", height: "38px" }}
+                style={{ paddingLeft: "32px", paddingRight: "8px", width: "100%" }}
                 disabled={loading}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ fontSize: "10px", color: "var(--txt3)", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>
+            <label style={{ 
+              fontSize: "11px", 
+              color: "var(--txt3)", 
+              textTransform: "uppercase", 
+              letterSpacing: "0.08em", 
+              fontWeight: 500,
+              display: "block", 
+              marginBottom: "6px" 
+            }}>
               รหัสผ่าน
             </label>
             <div style={{ position: "relative" }}>
-              <Lock size={14} style={{ position: "absolute", left: "12px", top: "12px", color: "var(--txt3)" }} />
+              <Lock size={14} style={{ position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)", color: "var(--txt3)", opacity: 0.7 }} />
               <input 
                 type="password" 
                 className="inp"
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                style={{ paddingLeft: "36px", width: "100%", height: "38px" }}
+                style={{ paddingLeft: "32px", paddingRight: "8px", width: "100%" }}
                 disabled={loading}
               />
             </div>
@@ -260,18 +279,26 @@ export default function AuthModal() {
 
           {!isLogin && (
             <div className="fade">
-              <label style={{ fontSize: "10px", color: "var(--txt3)", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>
+              <label style={{ 
+                fontSize: "11px", 
+                color: "var(--txt3)", 
+                textTransform: "uppercase", 
+                letterSpacing: "0.08em", 
+                fontWeight: 500,
+                display: "block", 
+                marginBottom: "6px" 
+              }}>
                 ยืนยันรหัสผ่าน
               </label>
               <div style={{ position: "relative" }}>
-                <Lock size={14} style={{ position: "absolute", left: "12px", top: "12px", color: "var(--txt3)" }} />
+                <Lock size={14} style={{ position: "absolute", left: "4px", top: "50%", transform: "translateY(-50%)", color: "var(--txt3)", opacity: 0.7 }} />
                 <input 
                   type="password" 
                   className="inp"
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  style={{ paddingLeft: "36px", width: "100%", height: "38px" }}
+                  style={{ paddingLeft: "32px", paddingRight: "8px", width: "100%" }}
                   disabled={loading}
                 />
               </div>
@@ -280,15 +307,13 @@ export default function AuthModal() {
 
           <button 
             type="submit" 
-            className="btn btn-g"
+            className="btn btn-g btn-full"
             style={{
-              height: "40px",
-              marginTop: "8px",
+              marginTop: "12px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "8px",
-              fontSize: "13px"
+              gap: "8px"
             }}
             disabled={loading}
           >
@@ -308,32 +333,45 @@ export default function AuthModal() {
         {/* Demo Admin Auto-fill Assistant */}
         <div 
           style={{
-            marginTop: "20px",
-            paddingTop: "14px",
-            borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+            marginTop: "24px",
+            paddingTop: "16px",
+            borderTop: "1px solid var(--bdr2)",
             textAlign: "center"
           }}
         >
           <button
+            type="button"
             onClick={handleAutoFill}
             style={{
-              background: "rgba(201, 149, 42, 0.08)",
-              border: "1px solid rgba(201, 149, 42, 0.2)",
-              borderRadius: "8px",
-              padding: "6px 14px",
+              background: "transparent",
+              border: "1px solid var(--accent)",
+              borderRadius: "var(--r-pill)",
+              padding: "8px 16px",
               fontSize: "11px",
-              color: "var(--gold2)",
+              color: "var(--accent)",
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
               gap: "6px",
-              transition: "all 0.2s"
+              fontFamily: "'DM Sans', sans-serif",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              fontWeight: 500,
+              transition: "all 500ms cubic-bezier(0.19, 1, 0.22, 1)"
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "var(--accent)";
+              e.currentTarget.style.color = "#ffffff";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "var(--accent)";
             }}
           >
             <Sparkles size={12} />
             <span>กรอกบัญชีแอดมินทดสอบ (Admin Auto-Fill)</span>
           </button>
-          <div style={{ fontSize: "9px", color: "var(--txt3)", marginTop: "6px" }}>
+          <div style={{ fontSize: "10px", color: "var(--txt3)", marginTop: "8px", letterSpacing: "0.02em" }}>
             admin@lottolens.com / admin1234
           </div>
         </div>

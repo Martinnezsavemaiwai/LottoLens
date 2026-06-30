@@ -94,12 +94,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8081/api/v1}
     container_name: lotto-frontend
     restart: always
     ports:
       - "3000:80"
-    environment:
-      - VITE_API_URL=http://localhost:8081/api/v1
     depends_on:
       - api
 
