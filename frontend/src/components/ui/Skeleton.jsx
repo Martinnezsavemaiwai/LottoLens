@@ -17,8 +17,8 @@ export default function Skeleton({
   const baseStyle = {
     width,
     height,
-    borderRadius: variant === 'circle' ? '50%' : '10px',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: variant === 'circle' ? '50%' : '4px',
+    backgroundColor: 'var(--s2)',
     ...style
   };
 

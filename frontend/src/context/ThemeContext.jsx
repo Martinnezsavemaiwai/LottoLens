@@ -6,8 +6,8 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("app-theme");
     if (savedTheme) return savedTheme;
-    // Default to dark mode if not set
-    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    // Default to light mode — Mocha Mousse Luxury is light-first
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
 
   useEffect(() => {
