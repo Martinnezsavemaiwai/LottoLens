@@ -10,6 +10,10 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Vite bakes env vars at build time, so VITE_API_URL must be available here
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Build the app (Vite build)
 RUN npm run build
 
