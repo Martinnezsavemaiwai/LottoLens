@@ -64,6 +64,9 @@ archive/
 coverage/
 backend/coverage/
 frontend/coverage/
+docs/
+specs/
+design-system/
 
 # ──────────────────────────────────────────
 # IDE & AI Generated
