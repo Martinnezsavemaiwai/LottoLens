@@ -57,10 +57,13 @@ docker-compose.override.yml
 .antigravity/
 
 # ──────────────────────────────────────────
-# Documentation & Archive (Optional to ignore)
+# Documentation, Archive & Coverage
 # ────────────────────────────────────────----------
 archive/
 *.tmp
+coverage/
+backend/coverage/
+frontend/coverage/
 
 # ──────────────────────────────────────────
 # IDE & AI Generated
@@ -69,3 +72,4 @@ archive/
 .impeccable/
 .agents/
 .antigravity/
+skills-lock.json
