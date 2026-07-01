@@ -67,3 +67,5 @@ archive/
 # ──────────────────────────────────────────
 .cursor/
 .impeccable/
+.agents/
+.antigravity/
