@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"lotto-backend/internal/services"
 	"strconv"
 
@@ -138,5 +139,21 @@ func (h *LaoHandler) DeleteResult(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "Lottery result deleted successfully",
+	})
+}
+
+// POST /api/v2/lottery/sync
+func (h *LaoHandler) Sync(c *fiber.Ctx) error {
+	draw, err := h.laoSvc.SyncLatest(c.Context())
+	if err != nil {
+		slog.Error("Lao lottery sync endpoint failed", "error", err)
+		return c.Status(500).JSON(fiber.Map{
+			"error":   "Lao lottery sync failed",
+			"details": err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{
+		"message": "Lao lottery synced successfully",
+		"data":    draw,
 	})
 }

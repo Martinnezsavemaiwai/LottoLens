@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { formatThaiDate, getFriendlyErrorMessage } from "../../utils/helpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { syncDraws, postLotteryResult, deleteLotteryResult } from "../../services/api";
+import { syncDraws, syncLaoDraws, postLotteryResult, deleteLotteryResult } from "../../services/api";
 import { useLottery } from "../../context/LotteryContext";
 import { useAuth } from "../../context/AuthContext";
 import { Plus, RefreshCw, Loader2, Save, Ruler, ClipboardList, ChevronLeft, ChevronRight, Search, Trash2, CheckCircle, AlertCircle, Info, Lock } from "lucide-react";
@@ -137,6 +137,19 @@ export default function HistTab({ history }) {
     }
   });
 
+  // Sync Mutation for Lao Lottery
+  const syncLaoMutation = useMutation({
+    mutationFn: syncLaoDraws,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["draws", "lao"] });
+      queryClient.invalidateQueries({ queryKey: ["stats", "summary", "lao"] });
+      showToast("ดึงข้อมูลล่าสุดเรียบร้อยแล้ว!", "success");
+    },
+    onError: (err) => {
+      showToast("ดึงข้อมูลล้มเหลว: " + getFriendlyErrorMessage(err), "error");
+    }
+  });
+
   // Post Mutation for manual entry (Lao/Thai)
   const addMutation = useMutation({
     mutationFn: (payload) => postLotteryResult(lotteryType, payload),
@@ -244,7 +257,26 @@ export default function HistTab({ history }) {
             <Plus size={16} style={{ color: "var(--accent)" }} />
             <span>เพิ่มผลหวย{lotteryType === "lao" ? "ลาวพัฒนา" : "รัฐบาลไทย"}งวดใหม่</span>
           </div>
-          {lotteryType === "thai" && (
+          {lotteryType === "lao" ? (
+            <button 
+              className="btn btn-b" 
+              style={{fontSize: 12, padding: '4px 10px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px'}}
+              onClick={() => syncLaoMutation.mutate()}
+              disabled={syncLaoMutation.isPending}
+            >
+              {syncLaoMutation.isPending ? (
+                <>
+                  <Loader2 size={12} className="spin" />
+                  <span>กำลัง Sync...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={12} />
+                  <span>อัปเดตผลหวยลาวพัฒนา</span>
+                </>
+              )}
+            </button>
+          ) : (
             <button 
               className="btn btn-b" 
               style={{fontSize: 12, padding: '4px 10px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px'}}

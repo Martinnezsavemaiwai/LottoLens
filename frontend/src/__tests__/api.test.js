@@ -15,6 +15,7 @@ vi.mock('axios', async () => {
     delete: vi.fn().mockResolvedValue({ data: {} }),
     interceptors: {
       request: { use: vi.fn() },
+      response: { use: vi.fn() },
     },
   }
   return {
@@ -74,6 +75,10 @@ describe('API service exports', () => {
 
   it('exports deleteLotteryResult function', () => {
     expect(typeof api.deleteLotteryResult).toBe('function')
+  })
+
+  it('exports syncLaoDraws function', () => {
+    expect(typeof api.syncLaoDraws).toBe('function')
   })
 
   it('exports default api instance', () => {

@@ -121,6 +121,7 @@ func main() {
 	lottery.Get("/history", laoHandler.GetHistory)
 	lottery.Get("/stats", laoHandler.GetStats)
 	lottery.Post("/result", requireAuth, laoHandler.PostResult)
+	lottery.Post("/sync", requireAuth, laoHandler.Sync)
 	lottery.Delete("/result/:id", requireAuth, laoHandler.DeleteResult)
 
 	// Stats Group (Explicit registration)
