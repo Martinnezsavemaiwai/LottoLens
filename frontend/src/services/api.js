@@ -167,4 +167,12 @@ export const deleteLotteryResult = async (id) => {
   return response.data;
 };
 
+/** Sync latest Lao draws from source */
+export const syncLaoDraws = async () => {
+  const response = await apiV2.post('/lottery/sync');
+  return response.data;
+};
+
 export default api;
+
+
