@@ -119,6 +119,18 @@ jobs:
           extra_args: --only-verified
 
   # ────────────────────────────────────────────────────────────────────
+  semgrep-scan:
+    name: Security — Semgrep Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/security-audit p/secrets p/golang p/react
+
+  # ────────────────────────────────────────────────────────────────────
   docker-build:
     name: Docker — Build Check
     runs-on: ubuntu-latest
